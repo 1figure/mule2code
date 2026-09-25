@@ -1,0 +1,81 @@
+# Runtime data written by the C# and Go ports (README "Run"):
+# <data>/contacts.db, inbox/, processed/, failed/, reports/
+data/
+*.db
+*.db-wal
+*.db-shm
+*.db-journal
+*.sqlite
+*.sqlite3
+
+# Files dropped into the SFTP bind mounts when running the original Mule app.
+# The directories themselves are tracked through .gitkeep.
+docker/sftp/new/*
+docker/sftp/processed/*
+docker/sftp/failed/*
+!docker/sftp/*/.gitkeep
+
+# Local credentials (SMTP / DB). The tracked mule-props-*.yaml ship with empty passwords;
+# keep any filled-in profile out of the repository.
+.env
+.env.*
+*.local.yaml
+mule-props-local.yaml
+
+# .NET (dotnet/)
+bin/
+obj/
+.vs/
+*.user
+*.suo
+*.swp
+TestResults/
+coverage.cobertura.xml
+*.trx
+
+# Go (go/)
+/go/batch
+/go/api
+/go/bin/
+*.test
+*.out
+coverage.html
+vendor/
+
+# Mule / Maven / Anypoint Studio (mule/)
+target/
+.classpath
+.project
+.settings/
+.mule/
+.factorypath
+*.class
+*.jar
+!**/lib/*.jar
+
+# IDEs and editors
+.idea/
+*.iml
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+!.vscode/launch.json
+*~
+
+# Claude Code: PROMPTS.md states no agent files or local instructions were used,
+# so no project-level Claude configuration (permission allowlists included) is tracked.
+.claude/
+CLAUDE.local.md
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs
+*.log
+logs/
+
+# Local scratch space
+.tmp/
+tmp/

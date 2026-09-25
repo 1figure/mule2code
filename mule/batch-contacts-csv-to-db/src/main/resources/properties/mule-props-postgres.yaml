@@ -1,0 +1,43 @@
+# mule-to-code fork: "postgres" profile, matching docker/docker-compose.yml. Select it with -Denv=postgres.
+http_listener:
+  host: "0.0.0.0"
+http:
+  port: "8081"
+https:
+  port: "8082"
+
+batch:
+  job:
+    block_size:   "10000"
+  aggregator:
+    main:
+      size:       "1000"
+
+sftp:
+  host:           "localhost"
+  port:           "2222"
+  username:       "mule"
+  password:       "mule"
+  working_dir:    "/data"
+  new_dir:        "new/"
+  processed_dir:  "processed/"
+  failed_dir:     "failed/"
+
+postgres_db:
+  host:           "localhost"
+  port:           "5432"
+  db_name:        "contacts"
+  url:            "jdbc:postgresql://${postgres_db.host}:${postgres_db.port}/${postgres_db.db_name}"
+  driver_class:   "org.postgresql.Driver"
+  username:       "contacts"
+  password:       "contacts"
+
+gmail:
+  server:
+    host:         "smtp.gmail.com"
+    port:         "465"
+    username:     ""
+    password:     ""
+  address:
+    from:         ""
+    to:           ""

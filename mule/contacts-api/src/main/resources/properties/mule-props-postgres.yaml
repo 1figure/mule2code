@@ -1,0 +1,14 @@
+http:
+  host: "0.0.0.0"
+  port: "8082"
+db:
+  url:          "jdbc:postgresql://localhost:5432/contacts"
+  driver_class: "org.postgresql.Driver"
+  username:     "contacts"
+  password:     "contacts"
+zippopotam:
+  host: "api.zippopotam.us"
+  port: "443"
+  protocol: "HTTPS"
+normalize:
+  max_contacts: "50"

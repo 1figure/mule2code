@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mule xmlns:sftp="http://www.mulesoft.org/schema/mule/sftp"
+	xmlns:tls="http://www.mulesoft.org/schema/mule/tls"
+	xmlns:email="http://www.mulesoft.org/schema/mule/email"
+	xmlns:validation="http://www.mulesoft.org/schema/mule/validation"
+	xmlns:db="http://www.mulesoft.org/schema/mule/db" xmlns:file="http://www.mulesoft.org/schema/mule/file"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="
+http://www.mulesoft.org/schema/mule/sftp http://www.mulesoft.org/schema/mule/sftp/current/mule-sftp.xsd 
+http://www.mulesoft.org/schema/mule/tls http://www.mulesoft.org/schema/mule/tls/current/mule-tls.xsd 
+http://www.mulesoft.org/schema/mule/validation http://www.mulesoft.org/schema/mule/validation/current/mule-validation.xsd 
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/file http://www.mulesoft.org/schema/mule/file/current/mule-file.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
+http://www.mulesoft.org/schema/mule/email http://www.mulesoft.org/schema/mule/email/current/mule-email.xsd">
+	<global-property doc:name="Global Property" doc:id="e25b8137-ba5f-4210-b8de-a11eec6654b0" name="env" value="dev" />
+	<configuration-properties doc:name="Configuration properties" doc:id="ddbec9cc-c5e6-4fd9-9563-011e62d7c7b5" file="properties/mule-props-${env}.yaml" />
+	<sftp:config name="SFTP_Configuration" doc:name="SFTP Config" doc:id="bde78048-30ef-481f-a1f7-44f81300a059">
+		<sftp:connection host="${sftp.host}" port="${sftp.port}" username="${sftp.username}" password="${sftp.password}" workingDir="${sftp.working_dir}"/>
+	</sftp:config>
+	<validation:config name="Validation_Config" doc:name="Validation Config" doc:id="ff5b5393-f058-4f57-9dce-e94c41a70639" />
+	<db:config name="Postgres_Database_Config" doc:name="Database Config" doc:id="27a8f0a4-bfd6-4a90-8030-870495659ae8" >
+		<db:generic-connection url="${postgres_db.url}" driverClassName="${postgres_db.driver_class}" user="${postgres_db.username}" password="${postgres_db.password}" />
+	</db:config>
+	<email:smtp-config name="Email_Gmail_Config" doc:name="Email SMTP" doc:id="0b0ded24-750d-442e-943a-11e45bb7af7d" >
+		<email:smtps-connection host="${gmail.server.host}" user="${gmail.server.username}" port="${gmail.server.port}" password="${gmail.server.password}">
+			<tls:context >
+				<tls:trust-store insecure="true" />
+			</tls:context>
+		</email:smtps-connection>
+	</email:smtp-config>
+</mule>

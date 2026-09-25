@@ -1,0 +1,10 @@
+[
+  {
+    "Error": "Missing or invalid email",
+    "Record": "001Hu00003RhROVIA3,0,,,1964-10-30,false,003Hu0000000003IAA,Correy V Checkley ,005Hu00000StNsfIAF,2009-03-11,USD,Research and Development,false,not-an-email,3,,Correy,false,false,false,,false,false,false,false,false,005Hu00000StNsfIAF,2025-05-01T11:39:15.257Z,Checkley,Social Media,Alexandria,US,22301,VA,32 Tony Road,true,V,6237683804,Alexandria,US,2026968225,22301,VA,32 Tony Road,005Hu00000RhnrSIAR,2026968225,/services/images/photo/003Hu0000000003IAA,012Hu0000023w05IAA,,,2025-05-01T11:39:15.257Z,Senior Financial Analyst"
+  },
+  {
+    "Error": "Missing or invalid email",
+    "Record": "001Hu00003RhRO8IAN,0,Bebe Davley,5917642893,1974-06-26,false,003Hu0000000007IAA,Willie L Glanders II,005Hu00000StNsfIAF,2015-02-04,USD,Support,false,,7,,Willie,false,false,false,,false,false,false,false,false,005Hu00000StNsfIAF,2025-05-01T11:39:15.257Z,Glanders,Marketing Event,Springfield,US,1152,MA,344 Dayton Pass,true,L,2026821919,Springfield,US,4132857940,1152,MA,344 Dayton Pass,005Hu00000RhnrSIAR,4132857940,/services/images/photo/003Hu0000000007IAA,012Hu0000023w05IAA,,II,2025-05-01T11:39:15.257Z,GIS Technical Architect"
+  }
+]

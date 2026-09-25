@@ -1,0 +1,4 @@
+# Read by the Roslyn CA1502 analyzer when Directory.Build.props is built with -p:CollectMetrics=true.
+# Threshold 1 makes it report the cyclomatic complexity of every method that has any branching at all;
+# reports/generate.sh turns those warnings into complexity-<date>.txt. Not used by a normal build.
+CA1502: 1

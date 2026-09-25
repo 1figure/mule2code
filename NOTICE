@@ -1,0 +1,12 @@
+mule-to-code showcase
+
+Includes batch-contacts-csv-to-db and sample data from
+https://github.com/abelisle-mulesoft/mule-4-batch-job-examples
+Copyright (c) Alan Belisle. Licensed under the Apache License, Version 2.0.
+See mule/batch-contacts-csv-to-db/LICENSE-upstream and mule/batch-contacts-csv-to-db/FORK-NOTES.md
+for the (additive) changes made in this repository.
+
+Everything else in this repository is licensed under the Apache License, Version 2.0 (see LICENSE).
+
+Mule, MuleSoft, Anypoint and DataWeave are trademarks of Salesforce, Inc. This repository is not
+affiliated with or endorsed by Salesforce/MuleSoft.

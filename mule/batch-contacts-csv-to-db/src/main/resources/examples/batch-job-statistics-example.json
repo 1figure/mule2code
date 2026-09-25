@@ -1,0 +1,15 @@
+{
+  "onCompletePhaseException": null,
+  "loadingPhaseException": null,
+  "totalRecords": 100,
+  "elapsedTimeInMillis": 379,
+  "failedOnCompletePhase": false,
+  "failedRecords": 2,
+  "loadedRecords": 100,
+  "failedOnInputPhase": false,
+  "successfulRecords": 98,
+  "inputPhaseException": null,
+  "processedRecords": 100,
+  "failedOnLoadingPhase": false,
+  "batchJobInstanceId": "6f00c1d0-552b-11ef-85f1-167dda5a2d64"
+}

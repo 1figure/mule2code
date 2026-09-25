@@ -1,0 +1,45 @@
+# Fidelity profile: the same Postgres the upstream Mule app was written against,
+# plus an SFTP server so the ORIGINAL Mule app can be run unchanged (it listens on SFTP),
+# plus the community Mule Kernel running mule/contacts-api (profile "mule-ce").
+# The C# and Go ports only need "db"; they read files from a local directory instead of SFTP.
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: contacts
+      POSTGRES_USER: contacts
+      POSTGRES_PASSWORD: contacts
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U contacts -d contacts"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  # Optional. Only needed to run mule/batch-contacts-csv-to-db itself (Mule EE runtime required).
+  sftp:
+    image: atmoz/sftp:alpine
+    profiles: ["mule"]
+    command: mule:mule:1001::data
+    ports:
+      - "2222:22"
+    volumes:
+      - ./sftp/new:/home/mule/data/new
+      - ./sftp/processed:/home/mule/data/processed
+      - ./sftp/failed:/home/mule/data/failed
+
+  # Optional. mule/contacts-api on the community Mule Kernel 4.12.0 (see mule-ce/Dockerfile).
+  # Host networking so the app's own mule-props-postgres.yaml (localhost:5432) works unchanged;
+  # the API listens on http://localhost:8082.
+  mule-api:
+    build:
+      context: ..
+      dockerfile: docker/mule-ce/Dockerfile
+    profiles: ["mule-ce"]
+    network_mode: host
+    depends_on:
+      db:
+        condition: service_healthy

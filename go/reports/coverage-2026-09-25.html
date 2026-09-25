@@ -1,0 +1,3005 @@
+
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+		<title>api: Go Coverage Report</title>
+		<style>
+			body {
+				background: black;
+				color: rgb(80, 80, 80);
+			}
+			body, pre, #legend span {
+				font-family: Menlo, monospace;
+				font-weight: bold;
+			}
+			#topbar {
+				background: black;
+				position: fixed;
+				top: 0; left: 0; right: 0;
+				height: 42px;
+				border-bottom: 1px solid rgb(80, 80, 80);
+			}
+			#content {
+				margin-top: 50px;
+			}
+			#nav, #legend {
+				float: left;
+				margin-left: 10px;
+			}
+			#legend {
+				margin-top: 12px;
+			}
+			#nav {
+				margin-top: 10px;
+			}
+			#legend span {
+				margin: 0 5px;
+			}
+			.cov0 { color: rgb(192, 0, 0) }
+.cov1 { color: rgb(128, 128, 128) }
+.cov2 { color: rgb(116, 140, 131) }
+.cov3 { color: rgb(104, 152, 134) }
+.cov4 { color: rgb(92, 164, 137) }
+.cov5 { color: rgb(80, 176, 140) }
+.cov6 { color: rgb(68, 188, 143) }
+.cov7 { color: rgb(56, 200, 146) }
+.cov8 { color: rgb(44, 212, 149) }
+.cov9 { color: rgb(32, 224, 152) }
+.cov10 { color: rgb(20, 236, 155) }
+
+		</style>
+	</head>
+	<body>
+		<div id="topbar">
+			<div id="nav">
+				<select id="files">
+				
+				<option value="file0">muletocode/cmd/api/main.go (86.5%)</option>
+				
+				<option value="file1">muletocode/cmd/batch/main.go (93.0%)</option>
+				
+				<option value="file2">muletocode/internal/api/api.go (100.0%)</option>
+				
+				<option value="file3">muletocode/internal/api/contacts.go (100.0%)</option>
+				
+				<option value="file4">muletocode/internal/api/normalize.go (95.5%)</option>
+				
+				<option value="file5">muletocode/internal/batch/engine.go (98.2%)</option>
+				
+				<option value="file6">muletocode/internal/config/config.go (100.0%)</option>
+				
+				<option value="file7">muletocode/internal/contacts/coerce.go (97.7%)</option>
+				
+				<option value="file8">muletocode/internal/contacts/csv.go (91.9%)</option>
+				
+				<option value="file9">muletocode/internal/contacts/email.go (100.0%)</option>
+				
+				<option value="file10">muletocode/internal/contacts/model.go (100.0%)</option>
+				
+				<option value="file11">muletocode/internal/contacts/transform.go (100.0%)</option>
+				
+				<option value="file12">muletocode/internal/db/db.go (89.8%)</option>
+				
+				<option value="file13">muletocode/internal/pipeline/errors.go (100.0%)</option>
+				
+				<option value="file14">muletocode/internal/pipeline/pipeline.go (89.1%)</option>
+				
+				<option value="file15">muletocode/internal/pipeline/vars.go (100.0%)</option>
+				
+				<option value="file16">muletocode/internal/report/report.go (94.3%)</option>
+				
+				<option value="file17">muletocode/internal/report/sink.go (88.2%)</option>
+				
+				<option value="file18">muletocode/internal/resources/resources.go (96.0%)</option>
+				
+				<option value="file19">muletocode/internal/testutil/testutil.go (0.0%)</option>
+				
+				<option value="file20">muletocode/internal/zippo/zippo.go (97.6%)</option>
+				
+				</select>
+			</div>
+			<div id="legend">
+				<span>not tracked</span>
+			
+				<span class="cov0">not covered</span>
+				<span class="cov8">covered</span>
+			
+			</div>
+		</div>
+		<div id="content">
+		
+		<pre class="file" id="file0" style="display: none">// Command api is the host of contacts-api: GET /contacts and POST /contacts/normalize on
+// HTTP_ADDR. Exit codes: 0 clean shutdown, 2 bad arguments, configuration, database or listen failure.
+package main
+
+import (
+        "context"
+        "errors"
+        "flag"
+        "io"
+        "log/slog"
+        "net/http"
+        "os"
+        "os/signal"
+        "syscall"
+        "time"
+
+        "muletocode/internal/api"
+        "muletocode/internal/config"
+        "muletocode/internal/db"
+        "muletocode/internal/zippo"
+)
+
+func main() <span class="cov0" title="0">{
+        ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+        defer stop()
+        os.Exit(run(ctx, os.Args[1:], os.Stderr))
+}</span>
+
+// run is the program with its inputs made explicit: it serves until ctx is done and returns the exit code.
+func run(ctx context.Context, args []string, stderr io.Writer) int <span class="cov8" title="1">{
+        fs := flag.NewFlagSet("api", flag.ContinueOnError)
+        fs.SetOutput(stderr)
+        verbose := fs.Bool("verbose", false, "log at debug level")
+        if err := fs.Parse(args); err != nil || fs.NArg() &gt; 0 </span><span class="cov8" title="1">{
+                return 2
+        }</span>
+
+        <span class="cov8" title="1">level := slog.LevelInfo
+        if *verbose </span><span class="cov8" title="1">{
+                level = slog.LevelDebug
+        }</span>
+        <span class="cov8" title="1">logger := slog.New(slog.NewTextHandler(stderr, &amp;slog.HandlerOptions{Level: level}))
+
+        // &lt;global-property name="env"&gt; + properties file → environment variables.
+        cfg, err := config.FromEnv()
+        if err != nil </span><span class="cov8" title="1">{
+                logger.Error(err.Error())
+                return 2
+        }</span>
+        // &lt;db:config name="Contacts_Database_Config"&gt;; fail fast on a database that cannot be reached,
+        // as the Mule app would at deploy time.
+        <span class="cov8" title="1">repo, err := db.Open(ctx, cfg.DBProfile, cfg.DSN())
+        if err != nil </span><span class="cov8" title="1">{
+                logger.Error(err.Error())
+                return 2
+        }</span>
+        <span class="cov8" title="1">defer repo.Close()
+
+        // &lt;http:request-config name="Zippopotam_Request_config"&gt;
+        lookup := zippo.NewClient(cfg.ZippopotamBaseURL, &amp;http.Client{Timeout: 30 * time.Second})
+
+        // &lt;http:listener-config name="HTTP_Listener_config"&gt;&lt;http:listener-connection host= port=&gt;
+        server := &amp;http.Server{
+                Addr:              cfg.HTTPAddr,
+                Handler:           api.NewHandler(repo, lookup, cfg.NormalizeMaxContacts, logger),
+                ReadHeaderTimeout: 10 * time.Second,
+        }
+        errs := make(chan error, 1)
+        go func() </span><span class="cov8" title="1">{
+                logger.Info("listening", "addr", cfg.HTTPAddr, "profile", cfg.DBProfile)
+                errs &lt;- server.ListenAndServe()
+        }</span>()
+
+        <span class="cov8" title="1">select </span>{
+        case err := &lt;-errs:<span class="cov8" title="1">
+                logger.Error(err.Error())
+                return 2</span>
+        case &lt;-ctx.Done():<span class="cov8" title="1"></span>
+        }
+        <span class="cov8" title="1">shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+        defer cancel()
+        if err := server.Shutdown(shutdownCtx); err != nil &amp;&amp; !errors.Is(err, http.ErrServerClosed) </span><span class="cov0" title="0">{
+                logger.Error("shutdown failed", "error", err)
+                return 2
+        }</span>
+        <span class="cov8" title="1">logger.Info("stopped")
+        return 0</span>
+}
+</pre>
+		
+		<pre class="file" id="file1" style="display: none">// Command batch is the host of batch-contacts-csv-to-db. Without arguments it watches
+// &lt;DATA_DIR&gt;/inbox like the SFTP listener did; -once processes the inbox once; -file &lt;path&gt;
+// processes one file. In the one-shot modes the report goes to stdout, otherwise to
+// &lt;DATA_DIR&gt;/reports. Exit codes: 0 success, 1 a file failed, 2 bad arguments, configuration or database.
+package main
+
+import (
+        "context"
+        "errors"
+        "flag"
+        "fmt"
+        "io"
+        "log/slog"
+        "os"
+        "os/signal"
+        "syscall"
+
+        "muletocode/internal/config"
+        "muletocode/internal/db"
+        "muletocode/internal/pipeline"
+        "muletocode/internal/report"
+)
+
+const usage = "usage: batch [-once | -file &lt;path&gt;] [-verbose]"
+
+func main() <span class="cov0" title="0">{
+        ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+        defer stop()
+        os.Exit(run(ctx, os.Args[1:], os.Stdout, os.Stderr))
+}</span>
+
+// run is the program with its inputs made explicit: args are the command-line flags, stdout
+// receives the one-shot report, stderr the log. It returns the exit code.
+func run(ctx context.Context, args []string, stdout, stderr io.Writer) int <span class="cov8" title="1">{
+        fs := flag.NewFlagSet("batch", flag.ContinueOnError)
+        fs.SetOutput(stderr)
+        once := fs.Bool("once", false, "process every *.csv in the inbox once, then exit")
+        file := fs.String("file", "", "process one `path`, then exit")
+        verbose := fs.Bool("verbose", false, "log the flow's TRACE loggers (debug level)")
+        if err := fs.Parse(args); err != nil </span><span class="cov8" title="1">{
+                return 2
+        }</span>
+        <span class="cov8" title="1">if fs.NArg() &gt; 0 </span><span class="cov8" title="1">{
+                fmt.Fprintln(stderr, usage)
+                return 2
+        }</span>
+
+        <span class="cov8" title="1">level := slog.LevelInfo
+        if *verbose </span><span class="cov8" title="1">{
+                level = slog.LevelDebug
+        }</span>
+        <span class="cov8" title="1">logger := slog.New(slog.NewTextHandler(stderr, &amp;slog.HandlerOptions{Level: level}))
+
+        // &lt;global-property name="env"&gt; + properties file → environment variables.
+        cfg, err := config.FromEnv()
+        if err != nil </span><span class="cov8" title="1">{
+                logger.Error(err.Error())
+                return 2
+        }</span>
+        // &lt;db:config name="Postgres_Database_Config"&gt;
+        <span class="cov8" title="1">repo, err := db.Open(ctx, cfg.DBProfile, cfg.DSN())
+        if err != nil </span><span class="cov8" title="1">{
+                logger.Error(err.Error())
+                return 2
+        }</span>
+        <span class="cov8" title="1">defer repo.Close()
+
+        // &lt;email:smtp-config name="Email_Gmail_Config"&gt; → a report sink (MAPPING.md deviation 2).
+        var sink report.Sink
+        if *once || *file != "" </span><span class="cov8" title="1">{
+                sink = report.NewStdoutSink(stdout)
+        }</span> else<span class="cov8" title="1"> {
+                sink = report.NewFileSink(cfg.ReportsDir())
+        }</span>
+        <span class="cov8" title="1">p := pipeline.New(cfg, repo, sink, logger)
+
+        switch </span>{
+        case *file != "":<span class="cov8" title="1">
+                _, err = p.ProcessFile(ctx, *file)</span>
+        case *once:<span class="cov8" title="1">
+                _, err = p.ProcessInbox(ctx, false)</span>
+        default:<span class="cov8" title="1">
+                logger.Info("watching inbox", "inbox", cfg.InboxDir(), "pollSeconds", cfg.PollSeconds, "profile", cfg.DBProfile)
+                err = p.Watch(ctx)</span>
+        }
+        <span class="cov8" title="1">if err != nil </span><span class="cov8" title="1">{
+                if errors.Is(err, context.Canceled) </span><span class="cov8" title="1">{
+                        logger.Info("stopped")
+                        return 0
+                }</span>
+                // A failed file has been logged with its cause by the pipeline and sits in failed/.
+                <span class="cov8" title="1">logger.Error(err.Error())
+                return 1</span>
+        }
+        <span class="cov8" title="1">return 0</span>
+}
+</pre>
+		
+		<pre class="file" id="file2" style="display: none">// Package api is contacts-api-impl.xml on net/http: the two HTTP flows, their validations and
+// their DataWeave transforms.
+package api
+
+import (
+        "context"
+        "encoding/json"
+        "fmt"
+        "io"
+        "log/slog"
+        "net/http"
+
+        "muletocode/internal/db"
+        "muletocode/internal/zippo"
+)
+
+// Repository is the database side of get-contacts-by-city-flow; *db.Repository implements it.
+type Repository interface {
+        // QueryByCity is &lt;db:select doc:name="Select contacts by city"&gt;.
+        QueryByCity(ctx context.Context, city string, limit int) ([]db.ContactRow, error)
+}
+
+// PostalLookup is the outbound side of normalize-contacts-flow; *zippo.Client implements it.
+type PostalLookup interface {
+        // Lookup is &lt;http:request method="GET" path="/{country}/{postalCode}"&gt;.
+        Lookup(ctx context.Context, country, postalCode string) (zippo.Wire, error)
+}
+
+type server struct {
+        repo        Repository
+        lookup      PostalLookup
+        maxContacts int
+        log         *slog.Logger
+}
+
+// NewHandler registers the two flows on a ServeMux: GET /contacts and POST /contacts/normalize.
+// maxContacts is ${normalize.max_contacts}. A nil logger discards the flows' error loggers.
+func NewHandler(repo Repository, lookup PostalLookup, maxContacts int, logger *slog.Logger) http.Handler <span class="cov8" title="1">{
+        if logger == nil </span><span class="cov8" title="1">{
+                logger = slog.New(slog.NewTextHandler(io.Discard, nil))
+        }</span>
+        <span class="cov8" title="1">s := &amp;server{repo: repo, lookup: lookup, maxContacts: maxContacts, log: logger}
+        mux := http.NewServeMux()
+        // &lt;http:listener path="/contacts" allowedMethods="GET"&gt;
+        mux.HandleFunc("GET /contacts", s.getContactsByCity)
+        // &lt;http:listener path="/contacts/normalize" allowedMethods="POST"&gt;
+        mux.HandleFunc("POST /contacts/normalize", s.normalizeContacts)
+        return recoverer(mux)</span>
+}
+
+// errorBody is the &lt;http:error-response&gt; body: {error: error.description}.
+type errorBody struct {
+        Error string `json:"error"`
+}
+
+// writeError is &lt;http:error-response statusCode="#[vars.httpStatus default 500]"&gt;.
+func writeError(w http.ResponseWriter, status int, description string) <span class="cov8" title="1">{
+        writeJSON(w, status, errorBody{Error: description})
+}</span>
+
+func writeJSON(w http.ResponseWriter, status int, body any) <span class="cov8" title="1">{
+        w.Header().Set("Content-Type", "application/json")
+        w.WriteHeader(status)
+        enc := json.NewEncoder(w)
+        enc.SetEscapeHTML(false)
+        _ = enc.Encode(body) // the client has gone if this fails; nothing left to report to
+}</span>
+
+// recoverer turns a panic in a handler into the 500 the error-response default would produce.
+func recoverer(next http.Handler) http.Handler <span class="cov8" title="1">{
+        return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) </span><span class="cov8" title="1">{
+                defer func() </span><span class="cov8" title="1">{
+                        if p := recover(); p != nil </span><span class="cov8" title="1">{
+                                writeError(w, http.StatusInternalServerError, fmt.Sprint(p))
+                        }</span>
+                }()
+                <span class="cov8" title="1">next.ServeHTTP(w, r)</span>
+        })
+}
+</pre>
+		
+		<pre class="file" id="file3" style="display: none">package api
+
+import (
+        "errors"
+        "net/http"
+        "strconv"
+        "strings"
+
+        "muletocode/internal/db"
+)
+
+// DefaultLimit is the default of `attributes.queryParams.limit default '50'`.
+const DefaultLimit = 50
+
+var (
+        // ErrCityRequired is the message of &lt;validation:is-not-blank-string doc:name="city is required"&gt;.
+        ErrCityRequired = errors.New("Query parameter 'city' is required")
+        // ErrLimitRange is the message of &lt;validation:is-number doc:name="limit in range" minValue="1" maxValue="500"&gt;.
+        ErrLimitRange = errors.New("Query parameter 'limit' must be between 1 and 500")
+)
+
+// ContactsByCity is the response body of GET /contacts (ContactsByCity in openapi.yaml).
+type ContactsByCity struct {
+        City     string        `json:"city"`
+        Count    int           `json:"count"`
+        Contacts []ContactView `json:"contacts"`
+}
+
+// ContactView is one contact of ContactsByCity (ContactView in openapi.yaml).
+type ContactView struct {
+        ContactID  *string     `json:"contact_id"`
+        FirstName  *string     `json:"first_name"`
+        LastName   *string     `json:"last_name"`
+        Email      *string     `json:"email"`
+        Phone      *string     `json:"phone"`
+        Title      *string     `json:"title"`
+        Department *string     `json:"department"`
+        Mailing    MailingView `json:"mailing"`
+}
+
+// MailingView is the nested mailing object of ContactView.
+type MailingView struct {
+        Street     *string `json:"street"`
+        City       *string `json:"city"`
+        State      *string `json:"state"`
+        PostalCode *string `json:"postal_code"`
+        Country    *string `json:"country"`
+}
+
+// ValidateQuery is the two validations of get-contacts-by-city-flow. city is
+// `attributes.queryParams.city default ”`, limit is `attributes.queryParams.limit default '50'`
+// unparsed. It returns the parsed limit, or the error whose text is the message of the first
+// failing check.
+func ValidateQuery(city, limit string) (int, error) <span class="cov8" title="1">{
+        // &lt;validation:is-not-blank-string value="#[vars.city]"&gt;
+        if strings.TrimSpace(city) == "" </span><span class="cov8" title="1">{
+                return 0, ErrCityRequired
+        }</span>
+        // `(... default '50') as Number` followed by &lt;validation:is-number numberType="INTEGER" minValue="1" maxValue="500"&gt;.
+        // A non-numeric value fails the coercion (an EXPRESSION error in Mule); it is reported with the same message.
+        <span class="cov8" title="1">if limit == "" </span><span class="cov8" title="1">{
+                return DefaultLimit, nil
+        }</span>
+        <span class="cov8" title="1">n, err := strconv.Atoi(limit)
+        if err != nil || n &lt; 1 || n &gt; 500 </span><span class="cov8" title="1">{
+                return 0, ErrLimitRange
+        }</span>
+        <span class="cov8" title="1">return n, nil</span>
+}
+
+// RowsToJSON is &lt;ee:transform doc:name="Rows to JSON"&gt;.
+func RowsToJSON(city string, rows []db.ContactRow) ContactsByCity <span class="cov8" title="1">{
+        views := make([]ContactView, 0, len(rows))
+        for _, row := range rows </span><span class="cov8" title="1">{
+                views = append(views, ContactView{
+                        ContactID:  row.ContactID,
+                        FirstName:  row.FirstName,
+                        LastName:   row.LastName,
+                        Email:      row.Email,
+                        Phone:      row.Phone,
+                        Title:      row.Title,
+                        Department: row.Department,
+                        Mailing: MailingView{
+                                Street:     row.MailingStreet,
+                                City:       row.MailingCity,
+                                State:      row.MailingState,
+                                PostalCode: row.MailingPostalCode,
+                                Country:    row.MailingCountry,
+                        },
+                })
+        }</span>
+        <span class="cov8" title="1">return ContactsByCity{City: city, Count: len(views), Contacts: views}</span>
+}
+
+// getContactsByCity is &lt;flow name="get-contacts-by-city-flow"&gt;.
+func (s *server) getContactsByCity(w http.ResponseWriter, r *http.Request) <span class="cov8" title="1">{
+        query := r.URL.Query()
+        // &lt;set-variable variableName="city" value="#[attributes.queryParams.city default '']"&gt;
+        city := query.Get("city")
+        // &lt;set-variable variableName="limit" value="#[(attributes.queryParams.limit default '50') as Number]"&gt;
+        limit, err := ValidateQuery(city, query.Get("limit"))
+        if err != nil </span><span class="cov8" title="1">{
+                // &lt;on-error-propagate type="VALIDATION:INVALID_STRING, VALIDATION:INVALID_NUMBER, VALIDATION:NOT_A_NUMBER"&gt; → 400
+                writeError(w, http.StatusBadRequest, err.Error())
+                return
+        }</span>
+
+        // &lt;db:select doc:name="Select contacts by city"&gt;
+        <span class="cov8" title="1">rows, err := s.repo.QueryByCity(r.Context(), city, limit)
+        if err != nil </span><span class="cov8" title="1">{
+                var dbErr *db.Error
+                if errors.As(err, &amp;dbErr) </span><span class="cov8" title="1">{
+                        // &lt;on-error-propagate type="DB:CONNECTIVITY, DB:QUERY_EXECUTION"&gt; → 503
+                        s.log.Error("Database error", "description", err.Error())
+                        writeError(w, http.StatusServiceUnavailable, err.Error())
+                        return
+                }</span>
+                <span class="cov8" title="1">writeError(w, http.StatusInternalServerError, err.Error())
+                return</span>
+        }
+        // &lt;ee:transform doc:name="Rows to JSON"&gt;
+        <span class="cov8" title="1">writeJSON(w, http.StatusOK, RowsToJSON(city, rows))</span>
+}
+</pre>
+		
+		<pre class="file" id="file4" style="display: none">package api
+
+import (
+        "encoding/json"
+        "errors"
+        "fmt"
+        "io"
+        "mime"
+        "net/http"
+        "strings"
+
+        "muletocode/internal/zippo"
+)
+
+var (
+        // ErrContactsPresent is the message of &lt;validation:is-true doc:name="contacts present"&gt;.
+        ErrContactsPresent = errors.New("Body must contain a non-empty 'contacts' array")
+        // ErrPostalCodeRequired is the first message inside &lt;validation:all&gt;.
+        ErrPostalCodeRequired = errors.New("Every contact needs 'mailing_postal_code'")
+        // ErrCountryRequired is the second message inside &lt;validation:all&gt;.
+        ErrCountryRequired = errors.New("Every contact needs 'mailing_country'")
+)
+
+// TooManyContactsError is the message of &lt;validation:is-true doc:name="contacts not too many"&gt;:
+// `'At most ' ++ p('normalize.max_contacts') ++ ' contacts per request'`.
+func TooManyContactsError(maxContacts int) error <span class="cov8" title="1">{
+        return fmt.Errorf("At most %d contacts per request", maxContacts)
+}</span>
+
+// NormalizeRequest is the request body of POST /contacts/normalize (NormalizeRequest in openapi.yaml).
+type NormalizeRequest struct {
+        // Contacts is `payload.contacts default []`.
+        Contacts []NormalizeContact `json:"contacts"`
+}
+
+// NormalizeContact is one input contact of NormalizeRequest.
+type NormalizeContact struct {
+        ContactID         *string `json:"contact_id"`
+        MailingPostalCode *string `json:"mailing_postal_code"`
+        MailingCountry    *string `json:"mailing_country"`
+}
+
+// NormalizeResult is one element of NormalizeResponse.Results.
+type NormalizeResult struct {
+        ContactID  *string      `json:"contact_id"`
+        PostalCode *string      `json:"postal_code"`
+        Country    *string      `json:"country"`
+        Status     string       `json:"status"`
+        Place      *zippo.Place `json:"place"`
+}
+
+// NormalizeResponse is the response body of POST /contacts/normalize (NormalizeResponse in openapi.yaml).
+type NormalizeResponse struct {
+        Count   int               `json:"count"`
+        Results []NormalizeResult `json:"results"`
+}
+
+// ValidateNormalize is the three validations of normalize-contacts-flow, in order, all before any
+// upstream call. It returns the error whose text is the message of the first failing one.
+// &lt;validation:all&gt; reports every failing check of its group joined by newlines (a
+// VALIDATION:MULTIPLE error), so both ErrPostalCodeRequired and ErrCountryRequired may be present.
+func ValidateNormalize(contacts []NormalizeContact, maxContacts int) error <span class="cov8" title="1">{
+        // &lt;validation:is-true expression="#[sizeOf(vars.contacts) &gt; 0]"&gt;
+        if len(contacts) == 0 </span><span class="cov8" title="1">{
+                return ErrContactsPresent
+        }</span>
+        // &lt;validation:is-true expression="#[sizeOf(vars.contacts) &lt;= (p('normalize.max_contacts') as Number)]"&gt;
+        <span class="cov8" title="1">if len(contacts) &gt; maxContacts </span><span class="cov8" title="1">{
+                return TooManyContactsError(maxContacts)
+        }</span>
+        // &lt;validation:all doc:name="each contact has postal code and country"&gt;
+        <span class="cov8" title="1">var failures []error
+        if !every(contacts, func(c NormalizeContact) bool </span><span class="cov8" title="1">{ return !isBlank(c.MailingPostalCode) }</span>) <span class="cov8" title="1">{
+                failures = append(failures, ErrPostalCodeRequired)
+        }</span>
+        <span class="cov8" title="1">if !every(contacts, func(c NormalizeContact) bool </span><span class="cov8" title="1">{ return !isBlank(c.MailingCountry) }</span>) <span class="cov8" title="1">{
+                failures = append(failures, ErrCountryRequired)
+        }</span>
+        <span class="cov8" title="1">return errors.Join(failures...)</span>
+}
+
+// ZippoToResult is &lt;ee:transform doc:name="Zippopotam to result"&gt;: status "ok" with places[0].
+func ZippoToResult(contact NormalizeContact, wire zippo.Wire) (NormalizeResult, error) <span class="cov8" title="1">{
+        place, err := zippo.FromWire(wire)
+        if err != nil </span><span class="cov8" title="1">{
+                return NormalizeResult{}, err
+        }</span>
+        <span class="cov8" title="1">return NormalizeResult{
+                ContactID:  contact.ContactID,
+                PostalCode: contact.MailingPostalCode,
+                Country:    upper(contact.MailingCountry),
+                Status:     "ok",
+                Place:      &amp;place,
+        }, nil</span>
+}
+
+// NotFoundResult is &lt;ee:transform doc:name="Not found result"&gt; inside &lt;on-error-continue type="HTTP:NOT_FOUND"&gt;.
+func NotFoundResult(contact NormalizeContact) NormalizeResult <span class="cov8" title="1">{
+        return NormalizeResult{
+                ContactID:  contact.ContactID,
+                PostalCode: contact.MailingPostalCode,
+                Country:    upper(contact.MailingCountry),
+                Status:     "not_found",
+                Place:      nil,
+        }
+}</span>
+
+// ResultsToJSON is &lt;ee:transform doc:name="Results to JSON"&gt;.
+func ResultsToJSON(results []NormalizeResult) NormalizeResponse <span class="cov8" title="1">{
+        if results == nil </span><span class="cov8" title="1">{
+                results = []NormalizeResult{}
+        }</span>
+        <span class="cov8" title="1">return NormalizeResponse{Count: len(results), Results: results}</span>
+}
+
+// normalizeContacts is &lt;flow name="normalize-contacts-flow"&gt;.
+func (s *server) normalizeContacts(w http.ResponseWriter, r *http.Request) <span class="cov8" title="1">{
+        // The listener only parses a JSON body; anything else fails `payload.contacts` with an EXPRESSION error → 400.
+        if r.ContentLength &gt; 0 &amp;&amp; !hasJSONContentType(r) </span><span class="cov8" title="1">{
+                writeError(w, http.StatusBadRequest, "Request body must be application/json")
+                return
+        }</span>
+        <span class="cov8" title="1">var body NormalizeRequest
+        if err := json.NewDecoder(r.Body).Decode(&amp;body); err != nil &amp;&amp; !errors.Is(err, io.EOF) </span><span class="cov8" title="1">{
+                // An unparsable body is an EXPRESSION error in Mule → 400. An empty body is not: `payload.contacts
+                // default []` yields [], and the first validation answers.
+                writeError(w, http.StatusBadRequest, "Invalid JSON body: "+err.Error())
+                return
+        }</span>
+        // &lt;set-variable variableName="contacts" value="#[payload.contacts default []]"&gt;
+        <span class="cov8" title="1">contacts := body.Contacts
+
+        // &lt;on-error-propagate type="VALIDATION:INVALID_BOOLEAN, VALIDATION:MULTIPLE, EXPRESSION"&gt; → 400
+        if err := ValidateNormalize(contacts, s.maxContacts); err != nil </span><span class="cov8" title="1">{
+                writeError(w, http.StatusBadRequest, err.Error())
+                return
+        }</span>
+
+        // &lt;set-variable variableName="results" value="#[[]]"&gt;
+        <span class="cov8" title="1">results := make([]NormalizeResult, 0, len(contacts))
+        // &lt;foreach doc:name="For each contact" collection="#[vars.contacts]"&gt;
+        for _, contact := range contacts </span><span class="cov8" title="1">{
+                // &lt;try doc:name="Try lookup"&gt; ... &lt;http:request doc:name="GET /{country}/{postal-code}" path="/{country}/{postalCode}"&gt;
+                wire, err := s.lookup.Lookup(r.Context(), deref(contact.MailingCountry), deref(contact.MailingPostalCode))
+                var result NormalizeResult
+                switch </span>{
+                case err == nil:<span class="cov8" title="1">
+                        result, err = ZippoToResult(contact, wire)
+                        if err != nil </span><span class="cov8" title="1">{
+                                // A failed `as Number` inside the transform is an EXPRESSION error → 400 by the flow's handler.
+                                writeError(w, http.StatusBadRequest, err.Error())
+                                return
+                        }</span>
+                case errors.Is(err, zippo.ErrNotFound):<span class="cov8" title="1">
+                        // &lt;on-error-continue doc:name="404 -&gt; not_found" type="HTTP:NOT_FOUND"&gt;
+                        result = NotFoundResult(contact)</span>
+                default:<span class="cov8" title="1">
+                        var upstream *zippo.UpstreamError
+                        if errors.As(err, &amp;upstream) </span><span class="cov8" title="1">{
+                                // &lt;on-error-propagate type="HTTP:CONNECTIVITY, HTTP:TIMEOUT, HTTP:INTERNAL_SERVER_ERROR, HTTP:SERVICE_UNAVAILABLE, HTTP:BAD_GATEWAY"&gt; → 502
+                                // The "Upstream error: " prefix belongs to the &lt;logger&gt; only; the body is {error: error.description}.
+                                s.log.Error("Upstream error: " + err.Error())
+                                writeError(w, http.StatusBadGateway, err.Error())
+                                return
+                        }</span>
+                        <span class="cov8" title="1">writeError(w, http.StatusInternalServerError, err.Error())
+                        return</span>
+                }
+                // &lt;set-variable variableName="results" value="#[vars.results + payload]"&gt;
+                <span class="cov8" title="1">results = append(results, result)</span>
+        }
+
+        // &lt;ee:transform doc:name="Results to JSON"&gt;
+        <span class="cov8" title="1">writeJSON(w, http.StatusOK, ResultsToJSON(results))</span>
+}
+
+// hasJSONContentType accepts application/json and any +json media type.
+func hasJSONContentType(r *http.Request) bool <span class="cov8" title="1">{
+        mediaType, _, err := mime.ParseMediaType(r.Header.Get("Content-Type"))
+        if err != nil </span><span class="cov0" title="0">{
+                return false
+        }</span>
+        <span class="cov8" title="1">return mediaType == "application/json" || strings.HasSuffix(mediaType, "+json")</span>
+}
+
+func every(contacts []NormalizeContact, ok func(NormalizeContact) bool) bool <span class="cov8" title="1">{
+        for _, c := range contacts </span><span class="cov8" title="1">{
+                if !ok(c) </span><span class="cov8" title="1">{
+                        return false
+                }</span>
+        }
+        <span class="cov8" title="1">return true</span>
+}
+
+// isBlank is DataWeave isBlank(value default ”): nil, empty or whitespace only.
+func isBlank(v *string) bool <span class="cov8" title="1">{
+        return v == nil || strings.TrimSpace(*v) == ""
+}</span>
+
+func upper(v *string) *string <span class="cov8" title="1">{
+        if v == nil </span><span class="cov0" title="0">{
+                return nil
+        }</span>
+        <span class="cov8" title="1">u := strings.ToUpper(*v)
+        return &amp;u</span>
+}
+
+func deref(v *string) string <span class="cov8" title="1">{
+        if v == nil </span><span class="cov0" title="0">{
+                return ""
+        }</span>
+        <span class="cov8" title="1">return *v</span>
+}
+</pre>
+		
+		<pre class="file" id="file5" style="display: none">// Package batch is a small generic reproduction of the Mule &lt;batch:job&gt;:
+//
+//   - the input is loaded in blocks of Job.BlockSize records;
+//   - steps run in order, and a step finishes for every record before the next step starts;
+//   - a step accepts records by its AcceptPolicy, runs its processors per record, then hands the
+//     records that passed to its aggregator in blocks of Step.AggregatorSize (0 = all);
+//   - a failing processor fails the record, a failing aggregator fails every record of its block;
+//   - the job stops once more than Job.MaxFailedRecords records have failed (-1 = unlimited);
+//   - Job.OnComplete receives the Statistics.
+//
+// Unlike Mule the job runs synchronously on the caller (MAPPING.md deviation 3).
+package batch
+
+import (
+        "context"
+        "crypto/rand"
+        "fmt"
+        "io"
+        "iter"
+        "log/slog"
+        "time"
+)
+
+// AcceptPolicy is the acceptPolicy attribute of a &lt;batch:step&gt;.
+type AcceptPolicy int
+
+const (
+        // NoFailures accepts only records that no previous step has failed (the default).
+        NoFailures AcceptPolicy = iota
+        // OnlyFailures accepts only records that a previous step has failed.
+        OnlyFailures
+        // All accepts every record.
+        All
+)
+
+// String returns the Mule spelling of the policy.
+func (p AcceptPolicy) String() string <span class="cov8" title="1">{
+        switch p </span>{
+        case NoFailures:<span class="cov8" title="1">
+                return "NO_FAILURES"</span>
+        case OnlyFailures:<span class="cov8" title="1">
+                return "ONLY_FAILURES"</span>
+        case All:<span class="cov8" title="1">
+                return "ALL"</span>
+        default:<span class="cov8" title="1">
+                return fmt.Sprintf("AcceptPolicy(%d)", int(p))</span>
+        }
+}
+
+// Record is one record travelling through a Job. Like a Mule batch record it keeps its payload
+// and, once it has failed, the first error that failed it (Batch::getFirstException()).
+type Record[T any] struct {
+        // Payload is the record; a processor may replace it (a Mule set-payload inside a step).
+        Payload T
+        // Index is the 0-based position in the input.
+        Index int64
+        // Err is the first error that failed the record, or nil while it is successful. Use Fail to set it.
+        Err error
+}
+
+// Failed reports whether any step has failed the record.
+func (r *Record[T]) Failed() bool <span class="cov8" title="1">{ return r.Err != nil }</span>
+
+// Fail marks the record failed; only the first error is kept.
+func (r *Record[T]) Fail(err error) <span class="cov8" title="1">{
+        if r.Err == nil </span><span class="cov8" title="1">{
+                r.Err = err
+        }</span>
+}
+
+// Processor is a per-record processor of a step; returning an error fails the record.
+type Processor[T any] func(ctx context.Context, r *Record[T]) error
+
+// Aggregator is the body of a &lt;batch:aggregator&gt;: it receives one block of records that passed
+// the step's processors. Returning an error fails every record of the block.
+type Aggregator[T any] func(ctx context.Context, block []*Record[T]) error
+
+// Step is a &lt;batch:step&gt;: an accept policy, per-record processors and an optional aggregator.
+type Step[T any] struct {
+        // Name is the name attribute, for logs.
+        Name string
+        // Accept is the acceptPolicy attribute; the zero value is NoFailures.
+        Accept AcceptPolicy
+        // Processors run for each accepted record, in order, before the aggregator.
+        Processors []Processor[T]
+        // Aggregator is the aggregator body, or nil when the step has none.
+        Aggregator Aggregator[T]
+        // AggregatorSize is the aggregator's size attribute; 0 means streaming="true", all records of the step in one call.
+        AggregatorSize int
+}
+
+// Accepts reports whether r enters the step under its accept policy.
+func (s *Step[T]) Accepts(r *Record[T]) bool <span class="cov8" title="1">{
+        switch s.Accept </span>{
+        case NoFailures:<span class="cov8" title="1">
+                return !r.Failed()</span>
+        case OnlyFailures:<span class="cov8" title="1">
+                return r.Failed()</span>
+        default:<span class="cov8" title="1">
+                return true</span>
+        }
+}
+
+// Statistics is the payload of &lt;batch:on-complete&gt;. The field names follow the Mule
+// BatchJobResult (see examples/batch-job-statistics-example.json); the *PhaseException fields
+// are not reproduced (MAPPING.md deviation 8).
+type Statistics struct {
+        BatchJobInstanceID  string `json:"batchJobInstanceId"`
+        TotalRecords        int64  `json:"totalRecords"`
+        LoadedRecords       int64  `json:"loadedRecords"`
+        ProcessedRecords    int64  `json:"processedRecords"`
+        SuccessfulRecords   int64  `json:"successfulRecords"`
+        FailedRecords       int64  `json:"failedRecords"`
+        ElapsedTimeInMillis int64  `json:"elapsedTimeInMillis"`
+        FailedOnInputPhase  bool   `json:"failedOnInputPhase"`
+        // FailedOnCompletePhase reports that the &lt;batch:on-complete&gt; body failed; the job itself still completed.
+        FailedOnCompletePhase bool `json:"failedOnCompletePhase"`
+}
+
+// InputError reports that reading the job input failed before any record was processed.
+type InputError struct {
+        Job string
+        Err error
+}
+
+func (e *InputError) Error() string <span class="cov8" title="1">{
+        return fmt.Sprintf("batch job %q failed reading its input: %v", e.Job, e.Err)
+}</span>
+
+// Unwrap returns the input error.
+func (e *InputError) Unwrap() error <span class="cov0" title="0">{ return e.Err }</span>
+
+// Job is a &lt;batch:job&gt;.
+type Job[T any] struct {
+        // Name is the jobName attribute.
+        Name string
+        // MaxFailedRecords is the maxFailedRecords attribute; -1 means unlimited.
+        MaxFailedRecords int
+        // BlockSize is the blockSize attribute: how many records are pulled from the input at a time. Must be positive.
+        BlockSize int
+        // Steps are the &lt;batch:process-records&gt; steps, in order.
+        Steps []Step[T]
+        // OnComplete is the &lt;batch:on-complete&gt; body; it receives the statistics. Optional.
+        OnComplete func(ctx context.Context, stats Statistics) error
+        // Logger receives the job's trace messages at debug level; nil discards them.
+        Logger *slog.Logger
+}
+
+// Run runs the job over input and returns the statistics (the same values OnComplete got).
+// An error from input ends the job with an *InputError; a cancelled ctx ends it with ctx.Err();
+// an error from OnComplete only sets Statistics.FailedOnCompletePhase.
+func (j *Job[T]) Run(ctx context.Context, input iter.Seq2[T, error]) (Statistics, error) <span class="cov8" title="1">{
+        if j.BlockSize &lt;= 0 </span><span class="cov8" title="1">{
+                return Statistics{}, fmt.Errorf("batch job %q: block size must be positive, got %d", j.Name, j.BlockSize)
+        }</span>
+        <span class="cov8" title="1">logger := j.Logger
+        if logger == nil </span><span class="cov8" title="1">{
+                logger = slog.New(slog.NewTextHandler(io.Discard, nil))
+        }</span>
+        <span class="cov8" title="1">start := time.Now()
+        stats := Statistics{BatchJobInstanceID: newInstanceID()}
+        logger.Debug("batch job starting", "job", j.Name, "instance", stats.BatchJobInstanceID)
+
+        // Input / loading phase. Mule enqueues records in blocks of blockSize; the blocks are then
+        // processed step by step, but every step must see all records before the next starts, so
+        // the whole input is materialised here.
+        records, err := j.load(ctx, input, logger)
+        if err != nil </span><span class="cov8" title="1">{
+                stats.ElapsedTimeInMillis = time.Since(start).Milliseconds()
+                if ctx.Err() != nil </span><span class="cov8" title="1">{
+                        return stats, fmt.Errorf("batch job %q: %w", j.Name, ctx.Err())
+                }</span>
+                <span class="cov8" title="1">stats.FailedOnInputPhase = true
+                logger.Error("batch job input phase failed", "job", j.Name, "error", err)
+                return stats, &amp;InputError{Job: j.Name, Err: err}</span>
+        }
+
+        <span class="cov8" title="1">st := &amp;runState{max: j.MaxFailedRecords}
+        for i := range j.Steps </span><span class="cov8" title="1">{
+                step := &amp;j.Steps[i]
+                if err := ctx.Err(); err != nil </span><span class="cov8" title="1">{
+                        return stats, fmt.Errorf("batch job %q: %w", j.Name, err)
+                }</span>
+                <span class="cov8" title="1">logger.Debug("batch step starting", "step", step.Name, "accept", step.Accept)
+                var passed []*Record[T]
+                for _, r := range records </span><span class="cov8" title="1">{
+                        if !step.Accepts(r) </span><span class="cov8" title="1">{
+                                continue</span>
+                        }
+                        <span class="cov8" title="1">ok, err := j.runProcessors(ctx, step, r, st, logger)
+                        if err != nil </span><span class="cov8" title="1">{
+                                return stats, fmt.Errorf("batch job %q: %w", j.Name, err)
+                        }</span>
+                        <span class="cov8" title="1">if ok </span><span class="cov8" title="1">{
+                                passed = append(passed, r)
+                        }</span> else<span class="cov8" title="1"> if st.exceeds() </span><span class="cov8" title="1">{
+                                break</span>
+                        }
+                }
+                <span class="cov8" title="1">if !st.exceeds() &amp;&amp; step.Aggregator != nil </span><span class="cov8" title="1">{
+                        if err := j.runAggregator(ctx, step, passed, st, logger); err != nil </span><span class="cov8" title="1">{
+                                return stats, fmt.Errorf("batch job %q: %w", j.Name, err)
+                        }</span>
+                }
+                <span class="cov8" title="1">if st.exceeds() </span><span class="cov8" title="1">{
+                        logger.Warn("batch job stopped: too many failed records", "job", j.Name, "maxFailedRecords", j.MaxFailedRecords)
+                        break</span>
+                }
+        }
+
+        <span class="cov8" title="1">stats.TotalRecords = int64(len(records))
+        stats.LoadedRecords = int64(len(records))
+        stats.ProcessedRecords = int64(len(records))
+        stats.FailedRecords = st.failed
+        stats.SuccessfulRecords = int64(len(records)) - st.failed
+        stats.ElapsedTimeInMillis = time.Since(start).Milliseconds()
+
+        // Like Mule, a failure in the on-complete phase does not fail the job or reach the calling
+        // flow's error handler; it is recorded on the statistics (failedOnCompletePhase) and logged.
+        if j.OnComplete != nil </span><span class="cov8" title="1">{
+                if err := j.OnComplete(ctx, stats); err != nil </span><span class="cov8" title="1">{
+                        if ctx.Err() != nil </span><span class="cov8" title="1">{
+                                return stats, fmt.Errorf("batch job %q: %w", j.Name, ctx.Err())
+                        }</span>
+                        <span class="cov8" title="1">logger.Error("batch job on-complete phase failed", "job", j.Name, "error", err)
+                        stats.FailedOnCompletePhase = true</span>
+                }
+        }
+        <span class="cov8" title="1">logger.Debug("batch job completed", "job", j.Name, "successful", stats.SuccessfulRecords, "failed", stats.FailedRecords)
+        return stats, nil</span>
+}
+
+func (j *Job[T]) load(ctx context.Context, input iter.Seq2[T, error], logger *slog.Logger) ([]*Record[T], error) <span class="cov8" title="1">{
+        var records []*Record[T]
+        for payload, err := range input </span><span class="cov8" title="1">{
+                if err != nil </span><span class="cov8" title="1">{
+                        return nil, err
+                }</span>
+                <span class="cov8" title="1">if len(records)%j.BlockSize == 0 </span><span class="cov8" title="1">{
+                        if err := ctx.Err(); err != nil </span><span class="cov8" title="1">{
+                                return nil, err
+                        }</span>
+                        <span class="cov8" title="1">logger.Debug("batch job loading block", "job", j.Name, "firstRecord", len(records))</span>
+                }
+                <span class="cov8" title="1">records = append(records, &amp;Record[T]{Payload: payload, Index: int64(len(records))})</span>
+        }
+        <span class="cov8" title="1">return records, nil</span>
+}
+
+// runProcessors runs the step's processors on r; ok is false when one of them failed the record.
+// The error is only ever the context's.
+func (j *Job[T]) runProcessors(ctx context.Context, step *Step[T], r *Record[T], st *runState, logger *slog.Logger) (ok bool, err error) <span class="cov8" title="1">{
+        for _, p := range step.Processors </span><span class="cov8" title="1">{
+                if err := p(ctx, r); err != nil </span><span class="cov8" title="1">{
+                        if ctx.Err() != nil </span><span class="cov8" title="1">{
+                                return false, ctx.Err()
+                        }</span>
+                        <span class="cov8" title="1">logger.Debug("batch step failed a record", "step", step.Name, "index", r.Index, "error", err)
+                        fail(st, r, err)
+                        return false, nil</span>
+                }
+        }
+        <span class="cov8" title="1">return true, nil</span>
+}
+
+// runAggregator feeds the aggregator block by block; it stops early once maxFailedRecords is exceeded.
+func (j *Job[T]) runAggregator(ctx context.Context, step *Step[T], passed []*Record[T], st *runState, logger *slog.Logger) error <span class="cov8" title="1">{
+        // size="0" / streaming="true": the whole step's output in a single call.
+        size := step.AggregatorSize
+        if size &lt;= 0 </span><span class="cov8" title="1">{
+                size = max(len(passed), 1)
+        }</span>
+        <span class="cov8" title="1">for offset := 0; offset &lt; len(passed); offset += size </span><span class="cov8" title="1">{
+                if err := ctx.Err(); err != nil </span><span class="cov0" title="0">{
+                        return err
+                }</span>
+                <span class="cov8" title="1">block := passed[offset:min(offset+size, len(passed))]
+                if err := step.Aggregator(ctx, block); err != nil </span><span class="cov8" title="1">{
+                        if ctx.Err() != nil </span><span class="cov8" title="1">{
+                                return ctx.Err()
+                        }</span>
+                        <span class="cov8" title="1">logger.Warn("batch step aggregator failed a block", "step", step.Name, "records", len(block), "error", err)
+                        for _, r := range block </span><span class="cov8" title="1">{
+                                fail(st, r, err)
+                        }</span>
+                        <span class="cov8" title="1">if st.exceeds() </span><span class="cov8" title="1">{
+                                return nil
+                        }</span>
+                }
+        }
+        <span class="cov8" title="1">return nil</span>
+}
+
+// runState is the mutable state of one Run: the failure counter and the maxFailedRecords check.
+type runState struct {
+        failed int64
+        max    int
+}
+
+func (s *runState) exceeds() bool <span class="cov8" title="1">{
+        return s.max &gt;= 0 &amp;&amp; s.failed &gt; int64(s.max)
+}</span>
+
+// fail records the failure of r; a record already failed by an earlier step is not counted twice.
+func fail[T any](s *runState, r *Record[T], err error) <span class="cov8" title="1">{
+        if !r.Failed() </span><span class="cov8" title="1">{
+                s.failed++
+        }</span>
+        <span class="cov8" title="1">r.Fail(err)</span>
+}
+
+// newInstanceID returns a random UUID (version 4) for batchJobInstanceId.
+func newInstanceID() string <span class="cov8" title="1">{
+        var b [16]byte
+        _, _ = rand.Read(b[:]) // never fails since Go 1.24
+        b[6] = (b[6] &amp; 0x0f) | 0x40
+        b[8] = (b[8] &amp; 0x3f) | 0x80
+        return fmt.Sprintf("%x-%x-%x-%x-%x", b[0:4], b[4:6], b[6:8], b[8:10], b[10:16])
+}</span>
+</pre>
+		
+		<pre class="file" id="file6" style="display: none">// Package config reads the settings of both applications from environment variables.
+// It replaces &lt;global-property name="env"&gt; + properties/mule-props-${env}.yaml.
+package config
+
+import (
+        "fmt"
+        "os"
+        "path/filepath"
+        "strconv"
+        "strings"
+
+        "muletocode/internal/contacts"
+)
+
+// Profile is the database profile selected by DB_PROFILE.
+type Profile string
+
+const (
+        // SQLite is a file database; the schema is applied on every start.
+        SQLite Profile = "sqlite"
+        // Postgres is the profile the original Mule applications were written against.
+        Postgres Profile = "postgres"
+)
+
+// Config holds the settings of both applications. Every field has a default, so nothing is required.
+type Config struct {
+        // DBProfile is DB_PROFILE: sqlite (default) or postgres.
+        DBProfile Profile
+        // SQLitePath is SQLITE_PATH, the SQLite database file (default &lt;DATA_DIR&gt;/contacts.db).
+        SQLitePath string
+        // PostgresDSN is POSTGRES_DSN (default matches docker/docker-compose.yml).
+        PostgresDSN string
+        // DataDir is DATA_DIR, the root of inbox/, processed/, failed/ and reports/ (default data).
+        DataDir string
+        // BatchBlockSize is BATCH_BLOCK_SIZE → ${batch.job.block_size} (default 10000).
+        BatchBlockSize int
+        // BatchAggregatorSize is BATCH_AGGREGATOR_SIZE → ${batch.aggregator.main.size} (default 1000).
+        BatchAggregatorSize int
+        // PollSeconds is POLL_SECONDS, the interval of the inbox watcher (the listener's fixed-frequency scheduler; default 10).
+        PollSeconds int
+        // HTTPAddr is HTTP_ADDR, the listen address of the API (default 0.0.0.0:8082, as ${http.host}:${http.port}).
+        HTTPAddr string
+        // ZippopotamBaseURL is ZIPPOPOTAM_BASE_URL → &lt;http:request-config name="Zippopotam_Request_config"&gt; (default https://api.zippopotam.us).
+        ZippopotamBaseURL string
+        // NormalizeMaxContacts is NORMALIZE_MAX_CONTACTS → ${normalize.max_contacts} (default 50).
+        NormalizeMaxContacts int
+        // TimestampPrecision is TIMESTAMP_PRECISION: how the three timestamp columns are coerced,
+        // date (Mule's `as Date`, default) or instant (MAPPING.md deviation 4).
+        TimestampPrecision contacts.Precision
+}
+
+// Default returns the settings used when no variable is set; SQLitePath is derived from DataDir.
+func Default() Config <span class="cov8" title="1">{
+        return Config{
+                DBProfile:            SQLite,
+                SQLitePath:           filepath.Join("data", "contacts.db"),
+                PostgresDSN:          "postgres://contacts:contacts@localhost:5432/contacts",
+                DataDir:              "data",
+                BatchBlockSize:       10000,
+                BatchAggregatorSize:  1000,
+                PollSeconds:          10,
+                HTTPAddr:             "0.0.0.0:8082",
+                ZippopotamBaseURL:    "https://api.zippopotam.us",
+                NormalizeMaxContacts: 50,
+                TimestampPrecision:   contacts.PrecisionDate,
+        }
+}</span>
+
+// FromEnv reads the settings from the process environment, falling back to Default.
+func FromEnv() (Config, error) <span class="cov8" title="1">{
+        return FromLookup(os.LookupEnv)
+}</span>
+
+// FromLookup reads the settings through lookup, which reports whether a variable is set.
+// A set but empty variable counts as unset.
+func FromLookup(lookup func(string) (string, bool)) (Config, error) <span class="cov8" title="1">{
+        cfg := Default()
+        get := func(name string) string </span><span class="cov8" title="1">{
+                v, _ := lookup(name)
+                return v
+        }</span>
+
+        <span class="cov8" title="1">profile, err := parseProfile(get("DB_PROFILE"))
+        if err != nil </span><span class="cov8" title="1">{
+                return Config{}, err
+        }</span>
+        <span class="cov8" title="1">cfg.DBProfile = profile
+        precision, err := contacts.ParsePrecision(get("TIMESTAMP_PRECISION"))
+        if err != nil </span><span class="cov8" title="1">{
+                return Config{}, err
+        }</span>
+        <span class="cov8" title="1">cfg.TimestampPrecision = precision
+
+        if v := get("DATA_DIR"); v != "" </span><span class="cov8" title="1">{
+                cfg.DataDir = v
+        }</span>
+        <span class="cov8" title="1">cfg.SQLitePath = filepath.Join(cfg.DataDir, "contacts.db")
+        if v := get("SQLITE_PATH"); v != "" </span><span class="cov8" title="1">{
+                cfg.SQLitePath = v
+        }</span>
+        <span class="cov8" title="1">if v := get("POSTGRES_DSN"); v != "" </span><span class="cov8" title="1">{
+                cfg.PostgresDSN = v
+        }</span>
+        <span class="cov8" title="1">if v := get("HTTP_ADDR"); v != "" </span><span class="cov8" title="1">{
+                cfg.HTTPAddr = v
+        }</span>
+        <span class="cov8" title="1">if v := get("ZIPPOPOTAM_BASE_URL"); v != "" </span><span class="cov8" title="1">{
+                cfg.ZippopotamBaseURL = v
+        }</span>
+
+        <span class="cov8" title="1">ints := []struct {
+                name string
+                dst  *int
+        }{
+                {"BATCH_BLOCK_SIZE", &amp;cfg.BatchBlockSize},
+                {"BATCH_AGGREGATOR_SIZE", &amp;cfg.BatchAggregatorSize},
+                {"POLL_SECONDS", &amp;cfg.PollSeconds},
+                {"NORMALIZE_MAX_CONTACTS", &amp;cfg.NormalizeMaxContacts},
+        }
+        for _, v := range ints </span><span class="cov8" title="1">{
+                raw := get(v.name)
+                if raw == "" </span><span class="cov8" title="1">{
+                        continue</span>
+                }
+                <span class="cov8" title="1">n, err := strconv.Atoi(raw)
+                if err != nil </span><span class="cov8" title="1">{
+                        return Config{}, fmt.Errorf("%s must be an integer, got %q: %w", v.name, raw, err)
+                }</span>
+                <span class="cov8" title="1">*v.dst = n</span>
+        }
+        <span class="cov8" title="1">return cfg, nil</span>
+}
+
+// DSN is the connection string of the selected profile: the SQLite file path or the Postgres URL.
+func (c Config) DSN() string <span class="cov8" title="1">{
+        if c.DBProfile == Postgres </span><span class="cov8" title="1">{
+                return c.PostgresDSN
+        }</span>
+        <span class="cov8" title="1">return c.SQLitePath</span>
+}
+
+// InboxDir is the directory the batch listener polls (${sftp.new_dir}).
+func (c Config) InboxDir() string <span class="cov8" title="1">{ return filepath.Join(c.DataDir, "inbox") }</span>
+
+// ProcessedDir is where successful files and errors files go (${sftp.processed_dir}).
+func (c Config) ProcessedDir() string <span class="cov8" title="1">{ return filepath.Join(c.DataDir, "processed") }</span>
+
+// FailedDir is where failed files are moved to (${sftp.failed_dir}).
+func (c Config) FailedDir() string <span class="cov8" title="1">{ return filepath.Join(c.DataDir, "failed") }</span>
+
+// ReportsDir is where the file report sink writes (replaces the e-mail).
+func (c Config) ReportsDir() string <span class="cov8" title="1">{ return filepath.Join(c.DataDir, "reports") }</span>
+
+func parseProfile(value string) (Profile, error) <span class="cov8" title="1">{
+        switch strings.ToLower(strings.TrimSpace(value)) </span>{
+        case "", "sqlite":<span class="cov8" title="1">
+                return SQLite, nil</span>
+        case "postgres", "postgresql":<span class="cov8" title="1">
+                return Postgres, nil</span>
+        default:<span class="cov8" title="1">
+                return "", fmt.Errorf("DB_PROFILE must be 'sqlite' or 'postgres', got %q", value)</span>
+        }
+}
+</pre>
+		
+		<pre class="file" id="file7" style="display: none">package contacts
+
+import (
+        "fmt"
+        "strconv"
+        "strings"
+        "time"
+)
+
+// CoercionError reports a DataWeave coercion (`as Number`, `as Boolean`, `as Date`) that failed
+// for one field. It fails the record and, being raised inside the aggregator, its whole block.
+type CoercionError struct {
+        Field  string
+        Value  string
+        Target string
+        Err    error
+}
+
+func (e *CoercionError) Error() string <span class="cov8" title="1">{
+        // DataWeave's own wording: it reaches the errors file as Batch::getFirstException().message.
+        return fmt.Sprintf("Cannot coerce String (%s) to %s", e.Value, e.Target)
+}</span>
+
+// Unwrap returns the parse error, if any.
+func (e *CoercionError) Unwrap() error <span class="cov0" title="0">{ return e.Err }</span>
+
+// The coercions below take the cell as *string: nil (column absent) and "" (empty cell) both
+// coerce to nil, as DataWeave does.
+
+// parseInt is DataWeave `as Number` for an integer column.
+func parseInt(value *string, field string) (*int64, error) <span class="cov8" title="1">{
+        if value == nil || *value == "" </span><span class="cov8" title="1">{
+                return nil, nil
+        }</span>
+        <span class="cov8" title="1">n, err := strconv.ParseInt(strings.TrimSpace(*value), 10, 32)
+        if err != nil </span><span class="cov8" title="1">{
+                return nil, &amp;CoercionError{Field: field, Value: *value, Target: "Number", Err: err}
+        }</span>
+        <span class="cov8" title="1">return &amp;n, nil</span>
+}
+
+// parseBool is DataWeave `as Boolean`: "true" / "false", case-insensitive.
+func parseBool(value *string, field string) (*bool, error) <span class="cov8" title="1">{
+        if value == nil || *value == "" </span><span class="cov8" title="1">{
+                return nil, nil
+        }</span>
+        <span class="cov8" title="1">var b bool
+        switch strings.ToLower(*value) </span>{
+        case "true":<span class="cov8" title="1">
+                b = true</span>
+        case "false":<span class="cov8" title="1">
+                b = false</span>
+        default:<span class="cov8" title="1">
+                return nil, &amp;CoercionError{Field: field, Value: *value, Target: "Boolean"}</span>
+        }
+        <span class="cov8" title="1">return &amp;b, nil</span>
+}
+
+// parseDate is DataWeave `as Date` on a yyyy-MM-dd value.
+// A `yyyy-MM-dd` date, or an ISO-8601 date-time (a missing offset means UTC). The first layout is
+// the date-only one so a caller can tell the two apart.
+var dateLayouts = []string{
+        "2006-01-02",
+        time.RFC3339Nano,
+        "2006-01-02T15:04:05.999999999",
+}
+
+// parseISO parses value with dateLayouts and reports whether it was a plain date. The returned
+// time keeps the offset as written, so its Year/Month/Day are the calendar date of the input.
+func parseISO(value, field string) (t time.Time, dateOnly bool, err error) <span class="cov8" title="1">{
+        var lastErr error
+        for i, layout := range dateLayouts </span><span class="cov8" title="1">{
+                t, err := time.Parse(layout, value)
+                if err == nil </span><span class="cov8" title="1">{
+                        return t, i == 0, nil
+                }</span>
+                <span class="cov8" title="1">lastErr = err</span>
+        }
+        <span class="cov8" title="1">return time.Time{}, false, lastErr</span>
+}
+
+// parseDate is DataWeave `as Date`: a Date has no time and no zone, so an ISO date-time such as
+// 2025-05-01T11:39:15.257Z becomes 2025-05-01 — the calendar date as written, never converted to
+// UTC first (2025-05-01T23:59:59+02:00 stays 2025-05-01).
+func parseDate(value *string, field string) (*Date, error) <span class="cov8" title="1">{
+        if value == nil || *value == "" </span><span class="cov8" title="1">{
+                return nil, nil
+        }</span>
+        <span class="cov8" title="1">t, _, err := parseISO(*value, field)
+        if err != nil </span><span class="cov8" title="1">{
+                return nil, &amp;CoercionError{Field: field, Value: *value, Target: "Date", Err: err}
+        }</span>
+        <span class="cov8" title="1">return &amp;Date{Year: t.Year(), Month: t.Month(), Day: t.Day()}, nil</span>
+}
+
+// parseTimestamp coerces one of the three timestamp columns under precision (MAPPING.md
+// deviation 4). PrecisionDate is Mule's `as Date`, exactly parseDate. PrecisionInstant keeps the
+// full timestamp, normalised to UTC; a plain date in the input stays a date.
+func parseTimestamp(value *string, field string, precision Precision) (*Timestamp, error) <span class="cov8" title="1">{
+        if value == nil || *value == "" </span><span class="cov8" title="1">{
+                return nil, nil
+        }</span>
+        <span class="cov8" title="1">if precision != PrecisionInstant </span><span class="cov8" title="1">{
+                d, err := parseDate(value, field)
+                if err != nil </span><span class="cov8" title="1">{
+                        return nil, err
+                }</span>
+                <span class="cov8" title="1">return &amp;Timestamp{Date: *d, DateOnly: true}, nil</span>
+        }
+        <span class="cov8" title="1">t, dateOnly, err := parseISO(*value, field)
+        if err != nil </span><span class="cov8" title="1">{
+                return nil, &amp;CoercionError{Field: field, Value: *value, Target: "DateTime", Err: err}
+        }</span>
+        <span class="cov8" title="1">ts := &amp;Timestamp{Date: Date{Year: t.Year(), Month: t.Month(), Day: t.Day()}, DateOnly: dateOnly}
+        if !dateOnly </span><span class="cov8" title="1">{
+                ts.Instant = t.UTC()
+        }</span>
+        <span class="cov8" title="1">return ts, nil</span>
+}
+</pre>
+		
+		<pre class="file" id="file8" style="display: none">package contacts
+
+import (
+        "bufio"
+        "bytes"
+        "encoding/csv"
+        "errors"
+        "fmt"
+        "io"
+        "iter"
+        "strings"
+)
+
+// Row is one CSV data row keyed by the header names: the element type of `payload as Iterator`.
+type Row map[string]string
+
+var utf8BOM = []byte{0xEF, 0xBB, 0xBF}
+
+// ReadRows is &lt;ee:transform doc:name="CSV to Java"&gt;: `payload as Iterator` on an
+// `application/csv; header=true` payload. It yields one Row per data row, lazily; missing trailing
+// cells are empty strings and extra cells are ignored. A missing header or a malformed row ends
+// the sequence with an error, which fails the whole file like a DataWeave read error would.
+func ReadRows(r io.Reader) iter.Seq2[Row, error] <span class="cov8" title="1">{
+        return func(yield func(Row, error) bool) </span><span class="cov8" title="1">{
+                br := bufio.NewReader(r)
+                if lead, err := br.Peek(len(utf8BOM)); err == nil &amp;&amp; bytes.Equal(lead, utf8BOM) </span><span class="cov8" title="1">{
+                        _, _ = br.Discard(len(utf8BOM))
+                }</span>
+                <span class="cov8" title="1">cr := csv.NewReader(br)
+                cr.FieldsPerRecord = -1
+                cr.LazyQuotes = true
+
+                header, err := cr.Read()
+                if err != nil </span><span class="cov8" title="1">{
+                        if errors.Is(err, io.EOF) </span><span class="cov8" title="1">{
+                                err = errors.New("CSV input has no header row")
+                        }</span> else<span class="cov0" title="0"> {
+                                err = fmt.Errorf("reading CSV header: %w", err)
+                        }</span>
+                        <span class="cov8" title="1">yield(nil, err)
+                        return</span>
+                }
+                <span class="cov8" title="1">for </span><span class="cov8" title="1">{
+                        cells, err := cr.Read()
+                        if errors.Is(err, io.EOF) </span><span class="cov8" title="1">{
+                                return
+                        }</span>
+                        <span class="cov8" title="1">if err != nil </span><span class="cov0" title="0">{
+                                yield(nil, fmt.Errorf("reading CSV: %w", err))
+                                return
+                        }</span>
+                        <span class="cov8" title="1">row := make(Row, len(header))
+                        for i, name := range header </span><span class="cov8" title="1">{
+                                if i &lt; len(cells) </span><span class="cov8" title="1">{
+                                        row[name] = cells[i]
+                                }</span> else<span class="cov8" title="1"> {
+                                        row[name] = ""
+                                }</span>
+                        }
+                        <span class="cov8" title="1">if !yield(row, nil) </span><span class="cov8" title="1">{
+                                return
+                        }</span>
+                }
+        }
+}
+
+// RowToCSVLine is DataWeave write(payload, "application/csv", {header: false, lineSeparator: ""}):
+// the row as a single CSV line without a line terminator, cells in Columns order, quoted only when
+// a cell contains a separator, a quote or a line break (MAPPING.md deviation 5).
+func RowToCSVLine(row Row) string <span class="cov8" title="1">{
+        var sb strings.Builder
+        for i, column := range Columns </span><span class="cov8" title="1">{
+                if i &gt; 0 </span><span class="cov8" title="1">{
+                        sb.WriteByte(',')
+                }</span>
+                <span class="cov8" title="1">sb.WriteString(quoteIfNeeded(row[column]))</span>
+        }
+        <span class="cov8" title="1">return sb.String()</span>
+}
+
+func quoteIfNeeded(value string) string <span class="cov8" title="1">{
+        if !strings.ContainsAny(value, ",\"\n\r") </span><span class="cov8" title="1">{
+                return value
+        }</span>
+        <span class="cov8" title="1">return `"` + strings.ReplaceAll(value, `"`, `""`) + `"`</span>
+}
+</pre>
+		
+		<pre class="file" id="file9" style="display: none">package contacts
+
+import (
+        "errors"
+        "regexp"
+        "strings"
+)
+
+// ErrInvalidEmail is the error of &lt;validation:is-email ... message="Missing or invalid email"&gt;.
+// Its text is the message attribute, copied verbatim because it ends up in the errors file.
+var ErrInvalidEmail = errors.New("Missing or invalid email")
+
+// Same shape the Mule Validation module accepts: local part, one '@', dotted domain with a 2+ letter TLD.
+var emailPattern = regexp.MustCompile("^[A-Za-z0-9!#$%&amp;'*+/=?^_`{|}~.-]+@[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?(?:\\.[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?)*\\.[A-Za-z]{2,}$")
+
+// IsEmail reports whether email is a syntactically valid address.
+func IsEmail(email string) bool <span class="cov8" title="1">{
+        if strings.TrimSpace(email) == "" || len(email) &gt; 254 </span><span class="cov8" title="1">{
+                return false
+        }</span>
+        <span class="cov8" title="1">at := strings.IndexByte(email, '@')
+        if at &lt;= 0 || at &gt; 64 || email[0] == '.' || email[at-1] == '.' || strings.Contains(email, "..") </span><span class="cov8" title="1">{
+                return false
+        }</span>
+        <span class="cov8" title="1">return emailPattern.MatchString(email)</span>
+}
+
+// ValidateEmail is &lt;validation:is-email email="#[payload.email]" message="Missing or invalid email"&gt;,
+// the per-record processor of main-processing-step. It returns ErrInvalidEmail when the row's
+// email cell is missing or not an address.
+func ValidateEmail(row Row) error <span class="cov8" title="1">{
+        if !IsEmail(row["email"]) </span><span class="cov8" title="1">{
+                return ErrInvalidEmail
+        }</span>
+        <span class="cov8" title="1">return nil</span>
+}
+</pre>
+		
+		<pre class="file" id="file10" style="display: none">// Package contacts holds the record model of the contacts table and the DataWeave transforms of
+// batch-contacts-csv-to-db that work on one CSV row: the CSV reader ("CSV to Java"), the typed
+// mapping ("CSV to SQL") with its coercions, the CSV line writer used by "Create Error Record"
+// and the e-mail validation.
+package contacts
+
+import (
+        "encoding/json"
+        "fmt"
+        "strings"
+        "time"
+)
+
+// Columns are the CSV / table column names in the order of the upstream INSERT statement.
+var Columns = []string{
+        "account_id",
+        "active_tracker_count",
+        "assistant_name",
+        "assistant_phone",
+        "birthdate",
+        "can_allow_portal_self_reg",
+        "contact_id",
+        "contact_name",
+        "created_by_id",
+        "created_date",
+        "currency_iso_code",
+        "department",
+        "do_not_call",
+        "email",
+        "external_id",
+        "fax",
+        "first_name",
+        "has_opted_out_of_email",
+        "has_opted_out_of_fax",
+        "has_privacy_hold",
+        "home_phone",
+        "is_deleted",
+        "is_email_bounced",
+        "is_locked",
+        "is_person_account",
+        "is_priority_record",
+        "last_modified_by_id",
+        "last_modified_date",
+        "last_name",
+        "lead_source",
+        "mailing_city",
+        "mailing_country",
+        "mailing_postal_code",
+        "mailing_state",
+        "mailing_street",
+        "may_edit",
+        "middle_name",
+        "mobile_phone",
+        "other_city",
+        "other_country",
+        "other_phone",
+        "other_postal_code",
+        "other_state",
+        "other_street",
+        "owner_id",
+        "phone",
+        "photo_url",
+        "record_type_id",
+        "salutation",
+        "suffix",
+        "system_mod_stamp",
+        "title",
+}
+
+// Date is a calendar date without a time of day, the result of DataWeave `as Date`.
+type Date struct {
+        Year  int
+        Month time.Month
+        Day   int
+}
+
+// String formats the date as yyyy-MM-dd.
+func (d Date) String() string <span class="cov8" title="1">{
+        return fmt.Sprintf("%04d-%02d-%02d", d.Year, int(d.Month), d.Day)
+}</span>
+
+// MarshalJSON writes the date as a yyyy-MM-dd string.
+func (d Date) MarshalJSON() ([]byte, error) <span class="cov8" title="1">{
+        return json.Marshal(d.String())
+}</span>
+
+// Time returns midnight UTC of the date.
+func (d Date) Time() time.Time <span class="cov8" title="1">{
+        return time.Date(d.Year, d.Month, d.Day, 0, 0, 0, 0, time.UTC)
+}</span>
+
+// Precision selects how the three timestamp columns (created_date, last_modified_date,
+// system_mod_stamp) are coerced; TIMESTAMP_PRECISION in the configuration (MAPPING.md deviation 4).
+type Precision string
+
+const (
+        // PrecisionDate is Mule's `as Date`: the calendar date as written, time and zone dropped. The default.
+        PrecisionDate Precision = "date"
+        // PrecisionInstant keeps the full timestamp, normalised to UTC with milliseconds; a plain date stays a date.
+        PrecisionInstant Precision = "instant"
+)
+
+// ParsePrecision reads a TIMESTAMP_PRECISION value, case-insensitively; empty means PrecisionDate.
+func ParsePrecision(value string) (Precision, error) <span class="cov8" title="1">{
+        switch p := Precision(strings.ToLower(strings.TrimSpace(value))); p </span>{
+        case "", PrecisionDate:<span class="cov8" title="1">
+                return PrecisionDate, nil</span>
+        case PrecisionInstant:<span class="cov8" title="1">
+                return PrecisionInstant, nil</span>
+        default:<span class="cov8" title="1">
+                return "", fmt.Errorf("TIMESTAMP_PRECISION must be 'date' or 'instant', got %q", value)</span>
+        }
+}
+
+// Timestamp is a timestamp column value as coerced under a Precision: always the calendar date as
+// written and, in instant mode for an input that carried a time, the UTC instant as well.
+type Timestamp struct {
+        // Date is the calendar date as written in the input.
+        Date Date
+        // Instant is the UTC instant; zero when DateOnly.
+        Instant time.Time
+        // DateOnly reports a plain date: always under PrecisionDate, or when the input had no time part.
+        DateOnly bool
+}
+
+// String is yyyy-MM-dd for a plain date, otherwise yyyy-MM-ddTHH:mm:ss.fffZ (fixed three-digit milliseconds).
+func (t Timestamp) String() string <span class="cov8" title="1">{
+        if t.DateOnly </span><span class="cov8" title="1">{
+                return t.Date.String()
+        }</span>
+        <span class="cov8" title="1">return t.Instant.UTC().Format("2006-01-02T15:04:05.000Z")</span>
+}
+
+// Time is the value for a native TIMESTAMPTZ column: midnight UTC of the date, or the instant.
+func (t Timestamp) Time() time.Time <span class="cov8" title="1">{
+        if t.DateOnly </span><span class="cov8" title="1">{
+                return t.Date.Time()
+        }</span>
+        <span class="cov8" title="1">return t.Instant.UTC()</span>
+}
+
+// MarshalJSON writes the timestamp as its String text.
+func (t Timestamp) MarshalJSON() ([]byte, error) <span class="cov8" title="1">{
+        return json.Marshal(t.String())
+}</span>
+
+// Contact is one row of the contacts table, typed the way the "CSV to SQL" DataWeave produced it:
+// `as Number` → *int64, `as Boolean` → *bool, `as Date` → *Date for birthdate, and *Timestamp for
+// created_date, last_modified_date and system_mod_stamp, which follow the configured Precision
+// (Mule's `as Date` by default). A nil field is a column absent from the CSV and is inserted as
+// NULL; an empty text cell stays "" (MAPPING.md deviation 6).
+type Contact struct {
+        AccountID             *string    `json:"account_id"`
+        ActiveTrackerCount    *int64     `json:"active_tracker_count"`
+        AssistantName         *string    `json:"assistant_name"`
+        AssistantPhone        *string    `json:"assistant_phone"`
+        Birthdate             *Date      `json:"birthdate"`
+        CanAllowPortalSelfReg *bool      `json:"can_allow_portal_self_reg"`
+        ContactID             *string    `json:"contact_id"`
+        ContactName           *string    `json:"contact_name"`
+        CreatedByID           *string    `json:"created_by_id"`
+        CreatedDate           *Timestamp `json:"created_date"`
+        CurrencyISOCode       *string    `json:"currency_iso_code"`
+        Department            *string    `json:"department"`
+        DoNotCall             *bool      `json:"do_not_call"`
+        Email                 *string    `json:"email"`
+        ExternalID            *string    `json:"external_id"`
+        Fax                   *string    `json:"fax"`
+        FirstName             *string    `json:"first_name"`
+        HasOptedOutOfEmail    *bool      `json:"has_opted_out_of_email"`
+        HasOptedOutOfFax      *bool      `json:"has_opted_out_of_fax"`
+        HasPrivacyHold        *bool      `json:"has_privacy_hold"`
+        HomePhone             *string    `json:"home_phone"`
+        IsDeleted             *bool      `json:"is_deleted"`
+        IsEmailBounced        *bool      `json:"is_email_bounced"`
+        IsLocked              *bool      `json:"is_locked"`
+        IsPersonAccount       *bool      `json:"is_person_account"`
+        IsPriorityRecord      *bool      `json:"is_priority_record"`
+        LastModifiedByID      *string    `json:"last_modified_by_id"`
+        LastModifiedDate      *Timestamp `json:"last_modified_date"`
+        LastName              *string    `json:"last_name"`
+        LeadSource            *string    `json:"lead_source"`
+        MailingCity           *string    `json:"mailing_city"`
+        MailingCountry        *string    `json:"mailing_country"`
+        MailingPostalCode     *string    `json:"mailing_postal_code"`
+        MailingState          *string    `json:"mailing_state"`
+        MailingStreet         *string    `json:"mailing_street"`
+        MayEdit               *bool      `json:"may_edit"`
+        MiddleName            *string    `json:"middle_name"`
+        MobilePhone           *string    `json:"mobile_phone"`
+        OtherCity             *string    `json:"other_city"`
+        OtherCountry          *string    `json:"other_country"`
+        OtherPhone            *string    `json:"other_phone"`
+        OtherPostalCode       *string    `json:"other_postal_code"`
+        OtherState            *string    `json:"other_state"`
+        OtherStreet           *string    `json:"other_street"`
+        OwnerID               *string    `json:"owner_id"`
+        Phone                 *string    `json:"phone"`
+        PhotoURL              *string    `json:"photo_url"`
+        RecordTypeID          *string    `json:"record_type_id"`
+        Salutation            *string    `json:"salutation"`
+        Suffix                *string    `json:"suffix"`
+        SystemModStamp        *Timestamp `json:"system_mod_stamp"`
+        Title                 *string    `json:"title"`
+}
+</pre>
+		
+		<pre class="file" id="file11" style="display: none">package contacts
+
+// FromRow is &lt;ee:transform doc:name="CSV to SQL"&gt; inside main-records-aggregator, for one record:
+// it maps a CSV row (header → cell) to a typed Contact. Text cells pass through unchanged,
+// including empty strings (MAPPING.md deviation 6); the three timestamp columns follow precision
+// (an empty Precision means PrecisionDate, Mule's `as Date`); a typed field that does not parse returns a
+// *CoercionError, the first one in column order.
+func FromRow(row Row, precision Precision) (Contact, error) <span class="cov8" title="1">{
+        var firstErr error
+        keep := func(err error) </span><span class="cov8" title="1">{
+                if err != nil &amp;&amp; firstErr == nil </span><span class="cov8" title="1">{
+                        firstErr = err
+                }</span>
+        }
+        <span class="cov8" title="1">text := func(key string) *string </span><span class="cov8" title="1">{
+                if v, ok := row[key]; ok </span><span class="cov8" title="1">{
+                        return &amp;v
+                }</span>
+                <span class="cov8" title="1">return nil</span>
+        }
+        <span class="cov8" title="1">number := func(key string) *int64 </span><span class="cov8" title="1">{
+                v, err := parseInt(text(key), key)
+                keep(err)
+                return v
+        }</span>
+        <span class="cov8" title="1">boolean := func(key string) *bool </span><span class="cov8" title="1">{
+                v, err := parseBool(text(key), key)
+                keep(err)
+                return v
+        }</span>
+        <span class="cov8" title="1">date := func(key string) *Date </span><span class="cov8" title="1">{
+                v, err := parseDate(text(key), key)
+                keep(err)
+                return v
+        }</span>
+        <span class="cov8" title="1">timestamp := func(key string) *Timestamp </span><span class="cov8" title="1">{
+                v, err := parseTimestamp(text(key), key, precision)
+                keep(err)
+                return v
+        }</span>
+
+        <span class="cov8" title="1">c := Contact{
+                AccountID:             text("account_id"),
+                ActiveTrackerCount:    number("active_tracker_count"),
+                AssistantName:         text("assistant_name"),
+                AssistantPhone:        text("assistant_phone"),
+                Birthdate:             date("birthdate"),
+                CanAllowPortalSelfReg: boolean("can_allow_portal_self_reg"),
+                ContactID:             text("contact_id"),
+                ContactName:           text("contact_name"),
+                CreatedByID:           text("created_by_id"),
+                CreatedDate:           timestamp("created_date"),
+                CurrencyISOCode:       text("currency_iso_code"),
+                Department:            text("department"),
+                DoNotCall:             boolean("do_not_call"),
+                Email:                 text("email"),
+                ExternalID:            text("external_id"),
+                Fax:                   text("fax"),
+                FirstName:             text("first_name"),
+                HasOptedOutOfEmail:    boolean("has_opted_out_of_email"),
+                HasOptedOutOfFax:      boolean("has_opted_out_of_fax"),
+                HasPrivacyHold:        boolean("has_privacy_hold"),
+                HomePhone:             text("home_phone"),
+                IsDeleted:             boolean("is_deleted"),
+                IsEmailBounced:        boolean("is_email_bounced"),
+                IsLocked:              boolean("is_locked"),
+                IsPersonAccount:       boolean("is_person_account"),
+                IsPriorityRecord:      boolean("is_priority_record"),
+                LastModifiedByID:      text("last_modified_by_id"),
+                LastModifiedDate:      timestamp("last_modified_date"),
+                LastName:              text("last_name"),
+                LeadSource:            text("lead_source"),
+                MailingCity:           text("mailing_city"),
+                MailingCountry:        text("mailing_country"),
+                MailingPostalCode:     text("mailing_postal_code"),
+                MailingState:          text("mailing_state"),
+                MailingStreet:         text("mailing_street"),
+                MayEdit:               boolean("may_edit"),
+                MiddleName:            text("middle_name"),
+                MobilePhone:           text("mobile_phone"),
+                OtherCity:             text("other_city"),
+                OtherCountry:          text("other_country"),
+                OtherPhone:            text("other_phone"),
+                OtherPostalCode:       text("other_postal_code"),
+                OtherState:            text("other_state"),
+                OtherStreet:           text("other_street"),
+                OwnerID:               text("owner_id"),
+                Phone:                 text("phone"),
+                PhotoURL:              text("photo_url"),
+                RecordTypeID:          text("record_type_id"),
+                Salutation:            text("salutation"),
+                Suffix:                text("suffix"),
+                SystemModStamp:        timestamp("system_mod_stamp"),
+                Title:                 text("title"),
+        }
+        if firstErr != nil </span><span class="cov8" title="1">{
+                return Contact{}, firstErr
+        }</span>
+        <span class="cov8" title="1">return c, nil</span>
+}
+</pre>
+		
+		<pre class="file" id="file12" style="display: none">// Package db is the Database connector of both applications on database/sql: it replaces
+// &lt;db:config&gt;&lt;db:generic-connection url= driverClassName=&gt; with modernc.org/sqlite or the pgx
+// stdlib driver, and implements &lt;db:bulk-insert&gt; and &lt;db:select&gt;.
+package db
+
+import (
+        "context"
+        "database/sql"
+        "errors"
+        "fmt"
+        "os"
+        "path/filepath"
+        "strings"
+
+        _ "github.com/jackc/pgx/v5/stdlib" // database/sql driver "pgx"
+        _ "modernc.org/sqlite"             // database/sql driver "sqlite"
+
+        "muletocode/internal/config"
+        "muletocode/internal/contacts"
+        "muletocode/internal/resources"
+)
+
+// Error is a failed database operation (the Mule DB:CONNECTIVITY / DB:QUERY_EXECUTION errors);
+// the driver error is wrapped.
+type Error struct {
+        Op  string
+        Err error
+}
+
+func (e *Error) Error() string <span class="cov0" title="0">{ return e.Op + ": " + e.Err.Error() }</span>
+
+// Unwrap returns the driver error.
+func (e *Error) Unwrap() error <span class="cov8" title="1">{ return e.Err }</span>
+
+// ContactRow holds the columns selected by &lt;db:select doc:name="Select contacts by city"&gt;.
+type ContactRow struct {
+        ContactID         *string
+        FirstName         *string
+        LastName          *string
+        Email             *string
+        Phone             *string
+        Title             *string
+        Department        *string
+        MailingStreet     *string
+        MailingCity       *string
+        MailingState      *string
+        MailingPostalCode *string
+        MailingCountry    *string
+}
+
+// Repository is the contacts table behind the two database operations of the Mule applications.
+type Repository struct {
+        db        *sql.DB
+        profile   config.Profile
+        insertSQL string
+        selectSQL string
+}
+
+// Open connects to the database of profile, verifies the connection and applies the schema:
+// docker/sqlite/contacts.sqlite.sql on every start (it is idempotent), docker/init/01-contacts.sql
+// only when the contacts table does not exist yet. For SQLite dsn is the file path, whose
+// directory is created; for Postgres it is a URL or key=value string.
+func Open(ctx context.Context, profile config.Profile, dsn string) (*Repository, error) <span class="cov8" title="1">{
+        if dsn == "" </span><span class="cov8" title="1">{
+                return nil, errors.New("db: empty DSN")
+        }</span>
+        <span class="cov8" title="1">var driver string
+        switch profile </span>{
+        case config.SQLite:<span class="cov8" title="1">
+                driver = "sqlite"
+                if dir := filepath.Dir(dsn); dir != "" &amp;&amp; dir != "." </span><span class="cov8" title="1">{
+                        if err := os.MkdirAll(dir, 0o755); err != nil </span><span class="cov8" title="1">{
+                                return nil, fmt.Errorf("db: creating directory of %s: %w", dsn, err)
+                        }</span>
+                }
+        case config.Postgres:<span class="cov8" title="1">
+                driver = "pgx"</span>
+        default:<span class="cov8" title="1">
+                return nil, fmt.Errorf("db: unknown profile %q", profile)</span>
+        }
+
+        <span class="cov8" title="1">sqlDB, err := sql.Open(driver, dsn)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, &amp;Error{Op: fmt.Sprintf("Cannot open the %s database", profile), Err: err}
+        }</span>
+        <span class="cov8" title="1">if profile == config.SQLite </span><span class="cov8" title="1">{
+                // One writer at a time keeps SQLite from reporting "database is locked" under concurrent requests.
+                sqlDB.SetMaxOpenConns(1)
+        }</span>
+        <span class="cov8" title="1">r := &amp;Repository{
+                db:        sqlDB,
+                profile:   profile,
+                insertSQL: insertSQL(profile),
+                selectSQL: selectSQL(profile),
+        }
+        if err := r.applySchema(ctx); err != nil </span><span class="cov8" title="1">{
+                _ = sqlDB.Close()
+                return nil, err
+        }</span>
+        <span class="cov8" title="1">return r, nil</span>
+}
+
+// Profile is the profile the repository binds values for.
+func (r *Repository) Profile() config.Profile <span class="cov8" title="1">{ return r.profile }</span>
+
+// Close releases the connection pool.
+func (r *Repository) Close() error <span class="cov8" title="1">{ return r.db.Close() }</span>
+
+// BulkInsert is &lt;db:bulk-insert doc:name="Contact Data"&gt;: all rows in one transaction, one INSERT
+// per row. Any failure rolls the transaction back and returns an *Error.
+func (r *Repository) BulkInsert(ctx context.Context, rows []contacts.Contact) error <span class="cov8" title="1">{
+        if len(rows) == 0 </span><span class="cov8" title="1">{
+                return nil
+        }</span>
+        <span class="cov8" title="1">op := fmt.Sprintf("Bulk insert of %d contacts failed", len(rows))
+        tx, err := r.db.BeginTx(ctx, nil)
+        if err != nil </span><span class="cov8" title="1">{
+                return &amp;Error{Op: op, Err: err}
+        }</span>
+        <span class="cov8" title="1">defer func() </span><span class="cov8" title="1">{ _ = tx.Rollback() }</span>()
+
+        <span class="cov8" title="1">stmt, err := tx.PrepareContext(ctx, r.insertSQL)
+        if err != nil </span><span class="cov0" title="0">{
+                return &amp;Error{Op: op, Err: err}
+        }</span>
+        <span class="cov8" title="1">defer stmt.Close()
+        for _, c := range rows </span><span class="cov8" title="1">{
+                if _, err := stmt.ExecContext(ctx, r.Bind(c)...); err != nil </span><span class="cov0" title="0">{
+                        return &amp;Error{Op: op, Err: err}
+                }</span>
+        }
+        <span class="cov8" title="1">if err := tx.Commit(); err != nil </span><span class="cov0" title="0">{
+                return &amp;Error{Op: op, Err: err}
+        }</span>
+        <span class="cov8" title="1">return nil</span>
+}
+
+// QueryByCity is &lt;db:select doc:name="Select contacts by city"&gt;: contacts whose mailing_city equals
+// city case-insensitively, ordered by last name, first name, contact id, at most limit rows.
+func (r *Repository) QueryByCity(ctx context.Context, city string, limit int) ([]ContactRow, error) <span class="cov8" title="1">{
+        const op = "Select contacts by city failed"
+        rows, err := r.db.QueryContext(ctx, r.selectSQL, city, limit)
+        if err != nil </span><span class="cov8" title="1">{
+                return nil, &amp;Error{Op: op, Err: err}
+        }</span>
+        <span class="cov8" title="1">defer rows.Close()
+
+        var out []ContactRow
+        for rows.Next() </span><span class="cov8" title="1">{
+                var c [12]sql.NullString
+                if err := rows.Scan(&amp;c[0], &amp;c[1], &amp;c[2], &amp;c[3], &amp;c[4], &amp;c[5], &amp;c[6], &amp;c[7], &amp;c[8], &amp;c[9], &amp;c[10], &amp;c[11]); err != nil </span><span class="cov0" title="0">{
+                        return nil, &amp;Error{Op: op, Err: err}
+                }</span>
+                <span class="cov8" title="1">out = append(out, ContactRow{
+                        ContactID:         nullable(c[0]),
+                        FirstName:         nullable(c[1]),
+                        LastName:          nullable(c[2]),
+                        Email:             nullable(c[3]),
+                        Phone:             nullable(c[4]),
+                        Title:             nullable(c[5]),
+                        Department:        nullable(c[6]),
+                        MailingStreet:     nullable(c[7]),
+                        MailingCity:       nullable(c[8]),
+                        MailingState:      nullable(c[9]),
+                        MailingPostalCode: nullable(c[10]),
+                        MailingCountry:    nullable(c[11]),
+                })</span>
+        }
+        <span class="cov8" title="1">if err := rows.Err(); err != nil </span><span class="cov0" title="0">{
+                return nil, &amp;Error{Op: op, Err: err}
+        }</span>
+        <span class="cov8" title="1">return out, nil</span>
+}
+
+// Bind returns the INSERT parameters of c in contacts.Columns order, represented as MAPPING.md
+// deviation 7 prescribes for the profile. Exported so a test can assert the exact SQLite values.
+func (r *Repository) Bind(c contacts.Contact) []any <span class="cov8" title="1">{
+        return []any{
+                text(c.AccountID),
+                integer(c.ActiveTrackerCount),
+                text(c.AssistantName),
+                text(c.AssistantPhone),
+                r.date(c.Birthdate),
+                r.boolean(c.CanAllowPortalSelfReg),
+                text(c.ContactID),
+                text(c.ContactName),
+                text(c.CreatedByID),
+                r.timestamp(c.CreatedDate),
+                text(c.CurrencyISOCode),
+                text(c.Department),
+                r.boolean(c.DoNotCall),
+                text(c.Email),
+                text(c.ExternalID),
+                text(c.Fax),
+                text(c.FirstName),
+                r.boolean(c.HasOptedOutOfEmail),
+                r.boolean(c.HasOptedOutOfFax),
+                r.boolean(c.HasPrivacyHold),
+                text(c.HomePhone),
+                r.boolean(c.IsDeleted),
+                r.boolean(c.IsEmailBounced),
+                r.boolean(c.IsLocked),
+                r.boolean(c.IsPersonAccount),
+                r.boolean(c.IsPriorityRecord),
+                text(c.LastModifiedByID),
+                r.timestamp(c.LastModifiedDate),
+                text(c.LastName),
+                text(c.LeadSource),
+                text(c.MailingCity),
+                text(c.MailingCountry),
+                text(c.MailingPostalCode),
+                text(c.MailingState),
+                text(c.MailingStreet),
+                r.boolean(c.MayEdit),
+                text(c.MiddleName),
+                text(c.MobilePhone),
+                text(c.OtherCity),
+                text(c.OtherCountry),
+                text(c.OtherPhone),
+                text(c.OtherPostalCode),
+                text(c.OtherState),
+                text(c.OtherStreet),
+                text(c.OwnerID),
+                text(c.Phone),
+                text(c.PhotoURL),
+                text(c.RecordTypeID),
+                text(c.Salutation),
+                text(c.Suffix),
+                r.timestamp(c.SystemModStamp),
+                text(c.Title),
+        }
+}</span>
+
+func text(v *string) any <span class="cov8" title="1">{
+        if v == nil </span><span class="cov8" title="1">{
+                return nil
+        }</span>
+        <span class="cov8" title="1">return *v</span>
+}
+
+func integer(v *int64) any <span class="cov8" title="1">{
+        if v == nil </span><span class="cov8" title="1">{
+                return nil
+        }</span>
+        <span class="cov8" title="1">return *v</span>
+}
+
+// boolean: SQLite has no BOOLEAN, so 0/1. Postgres keeps the native type.
+func (r *Repository) boolean(v *bool) any <span class="cov8" title="1">{
+        if v == nil </span><span class="cov8" title="1">{
+                return nil
+        }</span>
+        <span class="cov8" title="1">if r.profile == config.SQLite </span><span class="cov8" title="1">{
+                if *v </span><span class="cov8" title="1">{
+                        return int64(1)
+                }</span>
+                <span class="cov8" title="1">return int64(0)</span>
+        }
+        <span class="cov8" title="1">return *v</span>
+}
+
+// date: SQLite has no DATE, so yyyy-MM-dd text. Postgres keeps the native type.
+func (r *Repository) date(v *contacts.Date) any <span class="cov8" title="1">{
+        if v == nil </span><span class="cov8" title="1">{
+                return nil
+        }</span>
+        <span class="cov8" title="1">if r.profile == config.SQLite </span><span class="cov8" title="1">{
+                return v.String()
+        }</span>
+        <span class="cov8" title="1">return v.Time()</span>
+}
+
+// timestamp: SQLite has no TIMESTAMPTZ, so text — yyyy-MM-dd for a date (the default precision),
+// yyyy-MM-ddTHH:mm:ss.fffZ for an instant. Postgres gets midnight UTC, or the instant.
+func (r *Repository) timestamp(v *contacts.Timestamp) any <span class="cov8" title="1">{
+        if v == nil </span><span class="cov8" title="1">{
+                return nil
+        }</span>
+        <span class="cov8" title="1">if r.profile == config.SQLite </span><span class="cov8" title="1">{
+                return v.String()
+        }</span>
+        <span class="cov8" title="1">return v.Time()</span>
+}
+
+func nullable(v sql.NullString) *string <span class="cov8" title="1">{
+        if !v.Valid </span><span class="cov0" title="0">{
+                return nil
+        }</span>
+        <span class="cov8" title="1">return &amp;v.String</span>
+}
+
+func (r *Repository) applySchema(ctx context.Context) error <span class="cov8" title="1">{
+        op := fmt.Sprintf("Cannot open the %s database or apply its schema", r.profile)
+        if err := r.db.PingContext(ctx); err != nil </span><span class="cov8" title="1">{
+                return &amp;Error{Op: op, Err: err}
+        }</span>
+
+        <span class="cov8" title="1">var (
+                schema []byte
+                err    error
+        )
+        if r.profile == config.Postgres </span><span class="cov8" title="1">{
+                var exists bool
+                if err := r.db.QueryRowContext(ctx, "SELECT to_regclass('public.contacts') IS NOT NULL").Scan(&amp;exists); err != nil </span><span class="cov0" title="0">{
+                        return &amp;Error{Op: op, Err: err}
+                }</span>
+                <span class="cov8" title="1">if exists </span><span class="cov8" title="1">{
+                        return nil
+                }</span>
+                <span class="cov8" title="1">schema, err = resources.PostgresSchema()</span>
+        } else<span class="cov8" title="1"> {
+                schema, err = resources.SQLiteSchema()
+        }</span>
+        <span class="cov8" title="1">if err != nil </span><span class="cov0" title="0">{
+                return fmt.Errorf("%s: %w", op, err)
+        }</span>
+
+        // Both drivers run a multi-statement script in one parameterless Exec (pgx uses the simple protocol then).
+        <span class="cov8" title="1">if _, err := r.db.ExecContext(ctx, string(schema)); err != nil </span><span class="cov0" title="0">{
+                return &amp;Error{Op: op, Err: err}
+        }</span>
+        <span class="cov8" title="1">return nil</span>
+}
+
+// placeholder is the parameter marker of each driver: "?" for SQLite, "$n" for pgx.
+func placeholder(profile config.Profile, n int) string <span class="cov8" title="1">{
+        if profile == config.Postgres </span><span class="cov8" title="1">{
+                return fmt.Sprintf("$%d", n)
+        }</span>
+        <span class="cov8" title="1">return "?"</span>
+}
+
+// insertSQL is the upstream INSERT of &lt;db:bulk-insert&gt; with its ':name' parameters spelled for the driver.
+func insertSQL(profile config.Profile) string <span class="cov8" title="1">{
+        marks := make([]string, len(contacts.Columns))
+        for i := range contacts.Columns </span><span class="cov8" title="1">{
+                marks[i] = placeholder(profile, i+1)
+        }</span>
+        <span class="cov8" title="1">return "INSERT INTO contacts(" + strings.Join(contacts.Columns, ", ") + ")\nVALUES (" + strings.Join(marks, ", ") + ")"</span>
+}
+
+// selectSQL is the upstream SELECT of &lt;db:select&gt; with :city and :limit spelled for the driver.
+func selectSQL(profile config.Profile) string <span class="cov8" title="1">{
+        return "SELECT contact_id, first_name, last_name, email, phone, title, department,\n" +
+                "       mailing_street, mailing_city, mailing_state, mailing_postal_code, mailing_country\n" +
+                "FROM contacts\n" +
+                "WHERE LOWER(mailing_city) = LOWER(" + placeholder(profile, 1) + ")\n" +
+                "ORDER BY last_name, first_name, contact_id\n" +
+                "LIMIT " + placeholder(profile, 2)
+}</span>
+</pre>
+		
+		<pre class="file" id="file13" style="display: none">package pipeline
+
+import (
+        "fmt"
+
+        "muletocode/internal/batch"
+        "muletocode/internal/contacts"
+)
+
+// ErrorRecord is one entry of the &lt;stem&gt;.&lt;timestamp&gt;.errors.json file.
+type ErrorRecord struct {
+        // Error is Batch::getFirstException().message.
+        Error string `json:"Error"`
+        // Record is the failed row re-serialised as a single CSV line without header.
+        Record string `json:"Record"`
+}
+
+// NewErrorRecord is &lt;ee:transform doc:name="Create Error Record"&gt;:
+// {Error: Batch::getFirstException().message, Record: write(payload, "application/csv", {header: false, lineSeparator: ""})}.
+func NewErrorRecord(r *batch.Record[contacts.Row]) ErrorRecord <span class="cov8" title="1">{
+        message := ""
+        if r.Err != nil </span><span class="cov8" title="1">{
+                message = r.Err.Error()
+        }</span>
+        <span class="cov8" title="1">return ErrorRecord{Error: message, Record: contacts.RowToCSVLine(r.Payload)}</span>
+}
+
+// FileError reports that processing one input file failed; the file was moved to failed/ and the
+// cause is wrapped.
+type FileError struct {
+        Filename string
+        Err      error
+}
+
+func (e *FileError) Error() string <span class="cov8" title="1">{
+        return fmt.Sprintf("Failed processing file %s: %v", e.Filename, e.Err)
+}</span>
+
+// Unwrap returns the cause.
+func (e *FileError) Unwrap() error <span class="cov8" title="1">{ return e.Err }</span>
+</pre>
+		
+		<pre class="file" id="file14" style="display: none">// Package pipeline is contacts-batch-process-flow and the flows it calls: it watches the inbox,
+// runs file-processing-job on each CSV file, writes the errors file, sends the report and moves
+// the file to processed/ or failed/. The SFTP directories became local ones (MAPPING.md
+// deviation 1) and the job runs inline (deviation 3).
+package pipeline
+
+import (
+        "bytes"
+        "context"
+        "encoding/json"
+        "errors"
+        "fmt"
+        "io"
+        "log/slog"
+        "os"
+        "path/filepath"
+        "strings"
+        "time"
+
+        "muletocode/internal/batch"
+        "muletocode/internal/config"
+        "muletocode/internal/contacts"
+        "muletocode/internal/report"
+)
+
+// Repository is the target of the bulk inserts; *db.Repository implements it.
+type Repository interface {
+        // BulkInsert is &lt;db:bulk-insert doc:name="Contact Data"&gt;.
+        BulkInsert(ctx context.Context, rows []contacts.Contact) error
+}
+
+// Pipeline processes CSV files from the inbox through the batch job.
+type Pipeline struct {
+        cfg  config.Config
+        repo Repository
+        sink report.Sink
+        log  *slog.Logger
+        // Now is the source of now() for vars.startTime and the report; tests may replace it.
+        Now func() time.Time
+}
+
+// New creates the pipeline over an opened repository and a report sink. A nil logger discards the
+// flow's TRACE loggers, which are otherwise logged at debug level.
+func New(cfg config.Config, repo Repository, sink report.Sink, logger *slog.Logger) *Pipeline <span class="cov8" title="1">{
+        if logger == nil </span><span class="cov8" title="1">{
+                logger = slog.New(slog.NewTextHandler(io.Discard, nil))
+        }</span>
+        <span class="cov8" title="1">return &amp;Pipeline{cfg: cfg, repo: repo, sink: sink, log: logger, Now: time.Now}</span>
+}
+
+// Watch is &lt;sftp:listener doc:name="On New or Updated File"&gt; with its fixed-frequency scheduler: it polls inbox/ every
+// PollSeconds until ctx is done and returns ctx.Err(). A file that fails is moved to failed/ and
+// the watcher keeps going.
+func (p *Pipeline) Watch(ctx context.Context) error <span class="cov8" title="1">{
+        interval := time.Duration(max(1, p.cfg.PollSeconds)) * time.Second
+        ticker := time.NewTicker(interval)
+        defer ticker.Stop()
+        for </span><span class="cov8" title="1">{
+                if _, err := p.ProcessInbox(ctx, true); err != nil </span><span class="cov0" title="0">{
+                        return err
+                }</span>
+                <span class="cov8" title="1">select </span>{
+                case &lt;-ctx.Done():<span class="cov8" title="1">
+                        return ctx.Err()</span>
+                case &lt;-ticker.C:<span class="cov8" title="1"></span>
+                }
+        }
+}
+
+// ProcessInbox is one pass of the listener: it processes every *.csv in inbox/ in name order and
+// returns the statistics per file. Other files are ignored. With continueOnError a failing file
+// is skipped (it has been logged and moved to failed/), otherwise the pass stops with a *FileError.
+func (p *Pipeline) ProcessInbox(ctx context.Context, continueOnError bool) ([]batch.Statistics, error) <span class="cov8" title="1">{
+        inbox := p.cfg.InboxDir()
+        if err := os.MkdirAll(inbox, 0o755); err != nil </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("creating inbox %s: %w", inbox, err)
+        }</span>
+        <span class="cov8" title="1">entries, err := os.ReadDir(inbox)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("listing inbox %s: %w", inbox, err)
+        }</span>
+        <span class="cov8" title="1">var results []batch.Statistics
+        for _, entry := range entries </span><span class="cov8" title="1">{
+                if entry.IsDir() || !strings.EqualFold(filepath.Ext(entry.Name()), ".csv") </span><span class="cov8" title="1">{
+                        continue</span>
+                }
+                <span class="cov8" title="1">if err := ctx.Err(); err != nil </span><span class="cov8" title="1">{
+                        return results, err
+                }</span>
+                <span class="cov8" title="1">stats, err := p.ProcessFile(ctx, filepath.Join(inbox, entry.Name()))
+                if err != nil </span><span class="cov8" title="1">{
+                        var fileErr *FileError
+                        if continueOnError &amp;&amp; errors.As(err, &amp;fileErr) </span><span class="cov8" title="1">{
+                                continue</span>
+                        }
+                        <span class="cov8" title="1">return results, err</span>
+                }
+                <span class="cov8" title="1">results = append(results, stats)</span>
+        }
+        <span class="cov8" title="1">return results, nil</span>
+}
+
+// ProcessFile is contacts-batch-process-flow for one file: initialization, CSV to records, the
+// batch job, then the file is moved to processed/&lt;newFilename&gt;. On any error the file goes to
+// failed/ instead and a *FileError carries the cause; a cancelled ctx leaves the file in place.
+func (p *Pipeline) ProcessFile(ctx context.Context, path string) (batch.Statistics, error) <span class="cov8" title="1">{
+        p.log.Debug("Flow starting")
+        p.log.Debug("Batch configurations", "blockSize", p.cfg.BatchBlockSize, "mainAggregatorSize", p.cfg.BatchAggregatorSize)
+
+        // &lt;flow-ref name="initialization-flow"&gt;
+        vars := initialization(filepath.Base(path), p.Now())
+        stats, err := p.processFile(ctx, path, vars)
+        if err != nil </span><span class="cov8" title="1">{
+                if ctx.Err() != nil </span><span class="cov8" title="1">{
+                        return stats, err
+                }</span>
+                // &lt;error-handler&gt;&lt;on-error-propagate type="ANY"&gt;
+                <span class="cov8" title="1">p.log.Error("Failed processing file", "currentFilename", vars.currentFilename, "error", err)
+                p.moveToFailed(path, vars.currentFilename)
+                return stats, &amp;FileError{Filename: vars.currentFilename, Err: err}</span>
+        }
+        <span class="cov8" title="1">return stats, nil</span>
+}
+
+func (p *Pipeline) processFile(ctx context.Context, path string, vars runVars) (batch.Statistics, error) <span class="cov8" title="1">{
+        if err := os.MkdirAll(p.cfg.ProcessedDir(), 0o755); err != nil </span><span class="cov0" title="0">{
+                return batch.Statistics{}, fmt.Errorf("creating processed directory: %w", err)
+        }</span>
+        <span class="cov8" title="1">f, err := os.Open(path)
+        if err != nil </span><span class="cov8" title="1">{
+                return batch.Statistics{}, fmt.Errorf("opening input file: %w", err)
+        }</span>
+        <span class="cov8" title="1">p.log.Debug("Transforming input data to Java")
+        rows := contacts.ReadRows(f)
+        p.log.Debug("Staging Batch Job")
+        stats, err := p.buildJob(vars).Run(ctx, rows)
+        closeErr := f.Close()
+        if err != nil </span><span class="cov8" title="1">{
+                return stats, err
+        }</span>
+        <span class="cov8" title="1">if closeErr != nil </span><span class="cov0" title="0">{
+                return stats, fmt.Errorf("closing input file: %w", closeErr)
+        }</span>
+        <span class="cov8" title="1">p.log.Debug("Batch job successfully started")
+
+        // &lt;sftp:listener autoDelete="true" moveToDirectory=processed renameTo=#[vars.newFilename]&gt;,
+        // after the job instead of concurrently with it (deviation 3).
+        target := filepath.Join(p.cfg.ProcessedDir(), vars.newFilename)
+        if err := os.Rename(path, target); err != nil </span><span class="cov0" title="0">{
+                return stats, fmt.Errorf("moving input file to %s: %w", target, err)
+        }</span>
+        <span class="cov8" title="1">p.log.Debug("Flow ending")
+        return stats, nil</span>
+}
+
+// buildJob is &lt;batch:job jobName="file-processing-job" maxFailedRecords="-1" blockSize="${batch.job.block_size}"&gt;.
+func (p *Pipeline) buildJob(vars runVars) *batch.Job[contacts.Row] <span class="cov8" title="1">{
+        return &amp;batch.Job[contacts.Row]{
+                Name:             "file-processing-job",
+                MaxFailedRecords: -1,
+                BlockSize:        p.cfg.BatchBlockSize,
+                Logger:           p.log,
+                Steps: []batch.Step[contacts.Row]{
+                        // &lt;batch:step name="main-processing-step"&gt;
+                        {
+                                Name:   "main-processing-step",
+                                Accept: batch.NoFailures,
+                                Processors: []batch.Processor[contacts.Row]{
+                                        // &lt;validation:is-email doc:name="Is email" email="#[payload.email]" message="Missing or invalid email"&gt;
+                                        func(_ context.Context, r *batch.Record[contacts.Row]) error </span><span class="cov8" title="1">{
+                                                return contacts.ValidateEmail(r.Payload)
+                                        }</span>,
+                                },
+                                // &lt;batch:aggregator doc:name="main-records-aggregator" size="${batch.aggregator.main.size}"&gt;
+                                AggregatorSize: p.cfg.BatchAggregatorSize,
+                                Aggregator:     p.insertBlock,
+                        },
+                        // &lt;batch:step name="failed-records-processing-step" acceptPolicy="ONLY_FAILURES"&gt;
+                        {
+                                Name:   "failed-records-processing-step",
+                                Accept: batch.OnlyFailures,
+                                // &lt;batch:aggregator doc:name="failed-records-aggregator" streaming="true"&gt;
+                                AggregatorSize: 0,
+                                Aggregator: func(ctx context.Context, block []*batch.Record[contacts.Row]) error <span class="cov8" title="1">{
+                                        return p.writeErrorsFile(ctx, vars, block)
+                                }</span>,
+                        },
+                },
+                // &lt;batch:on-complete&gt;. In Mule this phase runs after contacts-batch-process-flow has ended,
+                // so a failure here never reaches the flow's &lt;on-error-propagate&gt; and never moves the file:
+                // the job records it as failedOnCompletePhase (MAPPING.md deviation 3).
+                OnComplete: func(ctx context.Context, stats batch.Statistics) error <span class="cov8" title="1">{
+                        if data, err := json.Marshal(stats); err == nil </span><span class="cov8" title="1">{
+                                p.log.Debug("Batch job statistics", "statistics", string(data))
+                        }</span>
+                        <span class="cov8" title="1">if err := p.sendReport(ctx, vars, stats); err != nil </span><span class="cov8" title="1">{
+                                return err
+                        }</span>
+                        <span class="cov8" title="1">p.log.Debug("Batch job completed")
+                        return nil</span>
+                },
+        }
+}
+
+// insertBlock is the body of main-records-aggregator: &lt;ee:transform doc:name="CSV to SQL"&gt; for each
+// record of the block, then &lt;db:bulk-insert doc:name="Contact Data"&gt;. A coercion error is returned as
+// is, so its message reaches the errors file unchanged.
+func (p *Pipeline) insertBlock(ctx context.Context, block []*batch.Record[contacts.Row]) error <span class="cov8" title="1">{
+        rows := make([]contacts.Contact, 0, len(block))
+        for _, r := range block </span><span class="cov8" title="1">{
+                c, err := contacts.FromRow(r.Payload, p.cfg.TimestampPrecision)
+                if err != nil </span><span class="cov8" title="1">{
+                        return err
+                }</span>
+                <span class="cov8" title="1">rows = append(rows, c)</span>
+        }
+        <span class="cov8" title="1">return p.repo.BulkInsert(ctx, rows)</span>
+}
+
+// writeErrorsFile is the body of failed-records-aggregator: &lt;ee:transform doc:name="Create Error Record"&gt;
+// per record (a processor in the XML; folded into the aggregator here so the step's payload type
+// stays the CSV row), then &lt;sftp:write doc:name="Error Records" path='#[p("sftp.processed_dir") ++ vars.errorsFilename]'&gt; as JSON.
+func (p *Pipeline) writeErrorsFile(_ context.Context, vars runVars, block []*batch.Record[contacts.Row]) error <span class="cov8" title="1">{
+        p.log.Debug("Writing errors/failed records to file")
+        records := make([]ErrorRecord, 0, len(block))
+        for _, r := range block </span><span class="cov8" title="1">{
+                records = append(records, NewErrorRecord(r))
+        }</span>
+        <span class="cov8" title="1">var buf bytes.Buffer
+        enc := json.NewEncoder(&amp;buf)
+        enc.SetEscapeHTML(false)
+        enc.SetIndent("", "  ")
+        if err := enc.Encode(records); err != nil </span><span class="cov0" title="0">{
+                return fmt.Errorf("encoding errors file: %w", err)
+        }</span>
+        <span class="cov8" title="1">path := filepath.Join(p.cfg.ProcessedDir(), vars.errorsFilename)
+        if err := os.WriteFile(path, bytes.TrimRight(buf.Bytes(), "\n"), 0o644); err != nil </span><span class="cov0" title="0">{
+                return fmt.Errorf("writing errors file: %w", err)
+        }</span>
+        <span class="cov8" title="1">return nil</span>
+}
+
+// sendReport is &lt;flow name="send-email-report-flow"&gt;.
+func (p *Pipeline) sendReport(ctx context.Context, vars runVars, stats batch.Statistics) error <span class="cov8" title="1">{
+        p.log.Debug("Sending contacts batch report email")
+        now := p.Now()
+        items := report.KeyStatistics(vars.currentFilename, now.Sub(vars.startTime), stats)
+        html, err := report.Render(items, now)
+        if err != nil </span><span class="cov0" title="0">{
+                return err
+        }</span>
+        <span class="cov8" title="1">if err := p.sink.Send(ctx, report.Subject, html); err != nil </span><span class="cov8" title="1">{
+                return fmt.Errorf("sending report: %w", err)
+        }</span>
+        <span class="cov8" title="1">p.log.Debug("Contacts batch report email sent successfully")
+        return nil</span>
+}
+
+// moveToFailed is &lt;sftp:move doc:name="File to Failed Directory" sourcePath='#[p("sftp.new_dir") ++ vars.currentFilename]' targetPath='#[p("sftp.failed_dir")]'&gt;.
+func (p *Pipeline) moveToFailed(path, filename string) <span class="cov8" title="1">{
+        if _, err := os.Stat(path); err != nil </span><span class="cov8" title="1">{
+                return
+        }</span>
+        <span class="cov8" title="1">failed := p.cfg.FailedDir()
+        if err := os.MkdirAll(failed, 0o755); err != nil </span><span class="cov0" title="0">{
+                p.log.Error("Could not create failed directory", "failedDir", failed, "error", err)
+                return
+        }</span>
+        <span class="cov8" title="1">if err := os.Rename(path, filepath.Join(failed, filename)); err != nil </span><span class="cov0" title="0">{
+                p.log.Error("Could not move file to failed directory", "currentFilename", filename, "failedDir", failed, "error", err)
+        }</span>
+}
+</pre>
+		
+		<pre class="file" id="file15" style="display: none">package pipeline
+
+import (
+        "strings"
+        "time"
+)
+
+// runVars are the flow variables set by initialization-flow, one set per processed file.
+type runVars struct {
+        startTime       time.Time // vars.startTime
+        currentFilename string    // vars.currentFilename
+        timestamp       string    // vars.timestamp: startTime as uuuuMMdd'T'HHmmssSSS
+        newFilename     string    // vars.newFilename: &lt;stem&gt;.&lt;timestamp&gt;.&lt;ext&gt;, the name in processed/
+        errorsFilename  string    // vars.errorsFilename: &lt;stem&gt;.&lt;timestamp&gt;.errors.json
+}
+
+// The DataWeave uuuuMMdd'T'HHmmssSSS pattern: Go has no millisecond verb without a separator,
+// so the dot of .000 is removed after formatting.
+const timestampLayout = "20060102T150405.000"
+
+// initialization is &lt;flow name="initialization-flow"&gt;: it derives the variables from the file
+// name and the start time. The name is split at dots exactly as splitBy(".") did: the stem is the
+// part before the first dot, the extension the part after it.
+func initialization(filename string, startTime time.Time) runVars <span class="cov8" title="1">{
+        timestamp := strings.Replace(startTime.Format(timestampLayout), ".", "", 1)
+        parts := strings.Split(filename, ".")
+        stem := parts[0]
+        extension := ""
+        if len(parts) &gt; 1 </span><span class="cov8" title="1">{
+                extension = parts[1]
+        }</span>
+        <span class="cov8" title="1">return runVars{
+                startTime:       startTime,
+                currentFilename: filename,
+                timestamp:       timestamp,
+                newFilename:     stem + "." + timestamp + "." + extension,
+                errorsFilename:  stem + "." + timestamp + ".errors.json",
+        }</span>
+}
+</pre>
+		
+		<pre class="file" id="file16" style="display: none">// Package report is send-email-report-flow: the "Extract Key Statistics" transform, the
+// parse-template over the upstream HTML e-mail template, and the sink that replaces &lt;email:send&gt;
+// (MAPPING.md deviation 2).
+package report
+
+import (
+        "fmt"
+        "regexp"
+        "strconv"
+        "strings"
+        "text/template"
+        "time"
+
+        "muletocode/internal/batch"
+        "muletocode/internal/resources"
+)
+
+// Subject is the subject attribute of &lt;email:send&gt;.
+const Subject = "Mule Contacts Batch Job Report"
+
+// Item is one label/value row of the report table.
+type Item struct {
+        Label string `json:"label"`
+        Value string `json:"value"`
+}
+
+// KeyStatistics is &lt;ee:transform doc:name="Extract Key Statistics"&gt;: the five rows of the report.
+// filename is vars.currentFilename, elapsed is now minus vars.startTime, stats the on-complete payload.
+func KeyStatistics(filename string, elapsed time.Duration, stats batch.Statistics) []Item <span class="cov8" title="1">{
+        return []Item{
+                {Label: "Processed file:", Value: filename},
+                {Label: "Processing time:", Value: formatMMSS(elapsed)},
+                {Label: "Records read:", Value: groupThousands(stats.TotalRecords)},
+                {Label: "Successful records:", Value: groupThousands(stats.SuccessfulRecords)},
+                {Label: "Failed records:", Value: groupThousands(stats.FailedRecords)},
+        }
+}</span>
+
+// formatMMSS is `(millis as DateTime {unit: "milliseconds"}) as String {format: "mm:ss.SSS"}`:
+// minutes and seconds of the elapsed time; hours wrap into the minute-of-hour as the DataWeave format did.
+func formatMMSS(elapsed time.Duration) string <span class="cov8" title="1">{
+        if elapsed &lt; 0 </span><span class="cov8" title="1">{
+                elapsed = 0
+        }</span>
+        <span class="cov8" title="1">minutes := int(elapsed/time.Minute) % 60
+        seconds := int(elapsed/time.Second) % 60
+        millis := int(elapsed/time.Millisecond) % 1000
+        return fmt.Sprintf("%02d:%02d.%03d", minutes, seconds, millis)</span>
+}
+
+// groupThousands is `n as String {format: "#,###"}`: thousands separated by commas, 0 printed as 0.
+func groupThousands(n int64) string <span class="cov8" title="1">{
+        digits := strconv.FormatInt(n, 10)
+        sign := ""
+        if strings.HasPrefix(digits, "-") </span><span class="cov8" title="1">{
+                sign, digits = "-", digits[1:]
+        }</span>
+        <span class="cov8" title="1">var sb strings.Builder
+        for i, d := range digits </span><span class="cov8" title="1">{
+                if i &gt; 0 &amp;&amp; (len(digits)-i)%3 == 0 </span><span class="cov8" title="1">{
+                        sb.WriteByte(',')
+                }</span>
+                <span class="cov8" title="1">sb.WriteRune(d)</span>
+        }
+        <span class="cov8" title="1">return sign + sb.String()</span>
+}
+
+// The two #[...] expressions embedded in the upstream template.
+var templateExpression = regexp.MustCompile(`(?s)#\[(.*?)\]`)
+
+// Render is &lt;parse-template doc:name="Create Email Body" location="parse-template/contacts-batch-report-email.template"&gt;: the
+// upstream HTML with its two embedded DataWeave expressions evaluated, the now() timestamp and the
+// table rows built from items.
+func Render(items []Item, now time.Time) (string, error) <span class="cov8" title="1">{
+        text, err := resources.ReportTemplate()
+        if err != nil </span><span class="cov0" title="0">{
+                return "", err
+        }</span>
+        <span class="cov8" title="1">return RenderTemplate(string(text), items, now)</span>
+}
+
+// RenderTemplate is Render over the given template text instead of the upstream file. Labels and
+// values are inserted verbatim, as parse-template concatenated them: no HTML escaping.
+func RenderTemplate(text string, items []Item, now time.Time) (string, error) <span class="cov8" title="1">{
+        // Each DataWeave expression becomes the equivalent text/template action:
+        // the now() format → {{.Now}}; the map/joinBy over the items → a range.
+        goText := templateExpression.ReplaceAllStringFunc(text, func(match string) string </span><span class="cov8" title="1">{
+                expression := strings.TrimSpace(match[2 : len(match)-1])
+                if strings.HasPrefix(expression, "now()") </span><span class="cov8" title="1">{
+                        return "{{.Now}}"
+                }</span>
+                <span class="cov8" title="1">return "{{range .Items}}&lt;tr&gt;&lt;td&gt;{{.Label}}&lt;/td&gt;&lt;td&gt;{{.Value}}&lt;/td&gt;&lt;/tr&gt;{{end}}"</span>
+        })
+        <span class="cov8" title="1">tmpl, err := template.New("report").Parse(goText)
+        if err != nil </span><span class="cov8" title="1">{
+                return "", fmt.Errorf("parsing report template: %w", err)
+        }</span>
+        <span class="cov8" title="1">var sb strings.Builder
+        data := struct {
+                Now   string
+                Items []Item
+        }{formatReportTimestamp(now), items}
+        if err := tmpl.Execute(&amp;sb, data); err != nil </span><span class="cov0" title="0">{
+                return "", fmt.Errorf("rendering report: %w", err)
+        }</span>
+        <span class="cov8" title="1">return sb.String(), nil</span>
+}
+
+// formatReportTimestamp is `now() as String {format: "eeee, MMMM d, u' at 'HH:mm:ss.SSS"}`,
+// e.g. "Friday, September 25, 2026 at 14:03:07.123".
+func formatReportTimestamp(now time.Time) string <span class="cov8" title="1">{
+        return now.Format("Monday, January 2, 2006 at 15:04:05.000")
+}</span>
+</pre>
+		
+		<pre class="file" id="file17" style="display: none">package report
+
+import (
+        "context"
+        "fmt"
+        "io"
+        "os"
+        "path/filepath"
+        "strings"
+        "time"
+)
+
+// Sink is where a rendered report goes; it replaces &lt;email:send doc:name="Contacts Batch Report Email"&gt; (MAPPING.md deviation 2).
+// Real SMTP would be one net/smtp call behind this interface.
+type Sink interface {
+        // Send delivers one report.
+        Send(ctx context.Context, subject, html string) error
+}
+
+// FileSink writes each report to &lt;Dir&gt;/&lt;yyyyMMddTHHmmssSSS&gt;.html.
+type FileSink struct {
+        // Dir is created on first use.
+        Dir string
+        // Now names the file; defaults to time.Now.
+        Now func() time.Time
+}
+
+// NewFileSink creates a sink writing into dir.
+func NewFileSink(dir string) *FileSink <span class="cov8" title="1">{
+        return &amp;FileSink{Dir: dir, Now: time.Now}
+}</span>
+
+// Send writes the report, with the subject as a leading HTML comment.
+func (s *FileSink) Send(_ context.Context, subject, html string) error <span class="cov8" title="1">{
+        if err := os.MkdirAll(s.Dir, 0o755); err != nil </span><span class="cov8" title="1">{
+                return fmt.Errorf("creating reports directory: %w", err)
+        }</span>
+        <span class="cov8" title="1">now := time.Now
+        if s.Now != nil </span><span class="cov8" title="1">{
+                now = s.Now
+        }</span>
+        <span class="cov8" title="1">name := strings.Replace(now().Format("20060102T150405.000"), ".", "", 1) + ".html"
+        path := filepath.Join(s.Dir, name)
+        if err := os.WriteFile(path, []byte("&lt;!-- "+subject+" --&gt;\n"+html), 0o644); err != nil </span><span class="cov0" title="0">{
+                return fmt.Errorf("writing report %s: %w", path, err)
+        }</span>
+        <span class="cov8" title="1">return nil</span>
+}
+
+// StdoutSink prints each report to a writer (stdout in one-shot mode).
+type StdoutSink struct {
+        W io.Writer
+}
+
+// NewStdoutSink creates a sink printing to w, or to os.Stdout when w is nil.
+func NewStdoutSink(w io.Writer) *StdoutSink <span class="cov8" title="1">{
+        if w == nil </span><span class="cov8" title="1">{
+                w = os.Stdout
+        }</span>
+        <span class="cov8" title="1">return &amp;StdoutSink{W: w}</span>
+}
+
+// Send prints "Subject: ..." followed by the HTML.
+func (s *StdoutSink) Send(_ context.Context, subject, html string) error <span class="cov8" title="1">{
+        if _, err := fmt.Fprintf(s.W, "Subject: %s\n%s\n", subject, html); err != nil </span><span class="cov0" title="0">{
+                return fmt.Errorf("printing report: %w", err)
+        }</span>
+        <span class="cov8" title="1">return nil</span>
+}
+</pre>
+		
+		<pre class="file" id="file18" style="display: none">// Package resources locates the upstream files the port reuses at run time: the two schema
+// scripts under docker/ and the e-mail template of the Mule application. They live outside the
+// Go module, so they are found by walking up from the working directory (or the executable) to
+// the repository root.
+package resources
+
+import (
+        "fmt"
+        "os"
+        "path/filepath"
+        "strings"
+        "sync"
+)
+
+const marker = "docker/sqlite/contacts.sqlite.sql"
+
+var (
+        once    sync.Once
+        root    string
+        rootErr error
+)
+
+// Root returns the repository root: the nearest ancestor of the working directory (then of the
+// executable) that contains docker/sqlite/contacts.sqlite.sql.
+func Root() (string, error) <span class="cov8" title="1">{
+        once.Do(func() </span><span class="cov8" title="1">{ root, rootErr = locate() }</span>)
+        <span class="cov8" title="1">return root, rootErr</span>
+}
+
+// SQLiteSchema returns the content of docker/sqlite/contacts.sqlite.sql.
+func SQLiteSchema() ([]byte, error) <span class="cov8" title="1">{
+        return read("docker/sqlite/contacts.sqlite.sql")
+}</span>
+
+// PostgresSchema returns the content of docker/init/01-contacts.sql.
+func PostgresSchema() ([]byte, error) <span class="cov8" title="1">{
+        return read("docker/init/01-contacts.sql")
+}</span>
+
+// ReportTemplate returns the upstream parse-template/contacts-batch-report-email.template.
+func ReportTemplate() ([]byte, error) <span class="cov8" title="1">{
+        return read("mule/batch-contacts-csv-to-db/src/main/resources/parse-template/contacts-batch-report-email.template")
+}</span>
+
+func read(rel string) ([]byte, error) <span class="cov8" title="1">{
+        dir, err := Root()
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+        <span class="cov8" title="1">data, err := os.ReadFile(filepath.Join(dir, filepath.FromSlash(rel)))
+        if err != nil </span><span class="cov8" title="1">{
+                return nil, fmt.Errorf("reading resource %s: %w", rel, err)
+        }</span>
+        <span class="cov8" title="1">return data, nil</span>
+}
+
+func locate() (string, error) <span class="cov8" title="1">{
+        var starts []string
+        if wd, err := os.Getwd(); err == nil </span><span class="cov8" title="1">{
+                starts = append(starts, wd)
+        }</span>
+        <span class="cov8" title="1">if exe, err := os.Executable(); err == nil </span><span class="cov8" title="1">{
+                starts = append(starts, filepath.Dir(exe))
+        }</span>
+        <span class="cov8" title="1">for _, start := range starts </span><span class="cov8" title="1">{
+                for dir := start; ; dir = filepath.Dir(dir) </span><span class="cov8" title="1">{
+                        if _, err := os.Stat(filepath.Join(dir, filepath.FromSlash(marker))); err == nil </span><span class="cov8" title="1">{
+                                return dir, nil
+                        }</span>
+                        <span class="cov8" title="1">if filepath.Dir(dir) == dir </span><span class="cov8" title="1">{
+                                break</span>
+                        }
+                }
+        }
+        <span class="cov8" title="1">return "", fmt.Errorf("repository root not found: no %s above %s", marker, strings.Join(starts, " or "))</span>
+}
+</pre>
+		
+		<pre class="file" id="file19" style="display: none">// Package testutil gives the tests access to the shared fixtures in &lt;repo&gt;/testdata by path.
+// The fixtures are never copied into the Go tree; a test that must hand a file to the pipeline
+// (which moves it) copies it into its own temporary directory.
+package testutil
+
+import (
+        "bytes"
+        "encoding/json"
+        "os"
+        "path/filepath"
+        "testing"
+
+        "muletocode/internal/resources"
+)
+
+// FixturePath returns the absolute path of &lt;repo&gt;/testdata/&lt;rel&gt;, whether or not it exists.
+func FixturePath(t testing.TB, rel string) string <span class="cov0" title="0">{
+        t.Helper()
+        root, err := resources.Root()
+        if err != nil </span><span class="cov0" title="0">{
+                t.Fatalf("locating repository root: %v", err)
+        }</span>
+        <span class="cov0" title="0">return filepath.Join(root, "testdata", filepath.FromSlash(rel))</span>
+}
+
+// Fixture returns the absolute path of &lt;repo&gt;/testdata/&lt;rel&gt; and fails the test if it is missing.
+func Fixture(t testing.TB, rel string) string <span class="cov0" title="0">{
+        t.Helper()
+        path := FixturePath(t, rel)
+        if _, err := os.Stat(path); err != nil </span><span class="cov0" title="0">{
+                t.Fatalf("fixture %s: %v", rel, err)
+        }</span>
+        <span class="cov0" title="0">return path</span>
+}
+
+// ReadFixture returns the content of &lt;repo&gt;/testdata/&lt;rel&gt;.
+func ReadFixture(t testing.TB, rel string) []byte <span class="cov0" title="0">{
+        t.Helper()
+        data, err := os.ReadFile(Fixture(t, rel))
+        if err != nil </span><span class="cov0" title="0">{
+                t.Fatalf("reading fixture %s: %v", rel, err)
+        }</span>
+        <span class="cov0" title="0">return data</span>
+}
+
+// ReadJSON decodes the JSON fixture &lt;repo&gt;/testdata/&lt;rel&gt; into v.
+func ReadJSON(t testing.TB, rel string, v any) <span class="cov0" title="0">{
+        t.Helper()
+        if err := json.Unmarshal(ReadFixture(t, rel), v); err != nil </span><span class="cov0" title="0">{
+                t.Fatalf("decoding fixture %s: %v", rel, err)
+        }</span>
+}
+
+// Canonical re-encodes a JSON document with sorted keys and no insignificant whitespace, so two
+// documents can be compared byte for byte regardless of formatting.
+func Canonical(t testing.TB, data []byte) string <span class="cov0" title="0">{
+        t.Helper()
+        var v any
+        if err := json.Unmarshal(data, &amp;v); err != nil </span><span class="cov0" title="0">{
+                t.Fatalf("decoding JSON: %v\n%s", err, data)
+        }</span>
+        <span class="cov0" title="0">out, err := json.Marshal(v)
+        if err != nil </span><span class="cov0" title="0">{
+                t.Fatalf("encoding JSON: %v", err)
+        }</span>
+        <span class="cov0" title="0">return string(out)</span>
+}
+
+// CopyFixture copies &lt;repo&gt;/testdata/&lt;rel&gt; to dst, creating dst's directory.
+func CopyFixture(t testing.TB, rel, dst string) <span class="cov0" title="0">{
+        t.Helper()
+        if err := os.MkdirAll(filepath.Dir(dst), 0o755); err != nil </span><span class="cov0" title="0">{
+                t.Fatalf("creating %s: %v", filepath.Dir(dst), err)
+        }</span>
+        <span class="cov0" title="0">if err := os.WriteFile(dst, ReadFixture(t, rel), 0o644); err != nil </span><span class="cov0" title="0">{
+                t.Fatalf("writing %s: %v", dst, err)
+        }</span>
+}
+
+// AssertJSONEqual fails when the two JSON documents differ after canonicalisation.
+func AssertJSONEqual(t testing.TB, want, got []byte) <span class="cov0" title="0">{
+        t.Helper()
+        w, g := Canonical(t, want), Canonical(t, got)
+        if w != g </span><span class="cov0" title="0">{
+                t.Errorf("JSON differs\nwant: %s\ngot:  %s", w, g)
+        }</span>
+}
+
+// Equal is bytes.Equal, re-exported so callers do not need the import for one call.
+func Equal(a, b []byte) bool <span class="cov0" title="0">{ return bytes.Equal(a, b) }</span>
+</pre>
+		
+		<pre class="file" id="file20" style="display: none">// Package zippo is the outbound side of normalize-contacts-flow:
+// &lt;http:request-config name="Zippopotam_Request_config"&gt; to api.zippopotam.us on net/http.
+package zippo
+
+import (
+        "context"
+        "encoding/json"
+        "errors"
+        "fmt"
+        "io"
+        "net/http"
+        "net/url"
+        "strconv"
+        "strings"
+        "time"
+
+        "muletocode/internal/contacts"
+)
+
+// ErrNotFound is the Mule HTTP:NOT_FOUND error: the service answered 404 for the postal code.
+var ErrNotFound = errors.New("postal code not found")
+
+// UpstreamError is the Mule HTTP:CONNECTIVITY, HTTP:TIMEOUT, HTTP:INTERNAL_SERVER_ERROR,
+// HTTP:SERVICE_UNAVAILABLE and HTTP:BAD_GATEWAY errors, which the API maps to 502.
+type UpstreamError struct {
+        Msg string
+        Err error
+}
+
+func (e *UpstreamError) Error() string <span class="cov8" title="1">{ return e.Msg }</span>
+
+// Unwrap returns the transport or decoding error, if any.
+func (e *UpstreamError) Unwrap() error <span class="cov8" title="1">{ return e.Err }</span>
+
+// Wire is the answer of GET https://api.zippopotam.us/{country}/{postalCode}, as sent on the wire.
+type Wire struct {
+        PostCode            *string     `json:"post code"`
+        Country             *string     `json:"country"`
+        CountryAbbreviation *string     `json:"country abbreviation"`
+        Places              []PlaceWire `json:"places"`
+}
+
+// PlaceWire is one element of Wire.Places; the coordinates are strings on the wire.
+type PlaceWire struct {
+        PlaceName         *string `json:"place name"`
+        Longitude         *string `json:"longitude"`
+        State             *string `json:"state"`
+        StateAbbreviation *string `json:"state abbreviation"`
+        Latitude          *string `json:"latitude"`
+}
+
+// Place is the place object of a normalize result (openapi.yaml NormalizeResponse.results[].place).
+type Place struct {
+        City              *string  `json:"city"`
+        State             *string  `json:"state"`
+        StateAbbreviation *string  `json:"state_abbreviation"`
+        Latitude          *float64 `json:"latitude"`
+        Longitude         *float64 `json:"longitude"`
+}
+
+// FromWire is the place part of &lt;ee:transform doc:name="Zippopotam to result"&gt;: places[0] with
+// `latitude as Number` / `longitude as Number`. An absent places[0] gives a Place of nils.
+func FromWire(w Wire) (Place, error) <span class="cov8" title="1">{
+        var pw PlaceWire
+        if len(w.Places) &gt; 0 </span><span class="cov8" title="1">{
+                pw = w.Places[0]
+        }</span>
+        <span class="cov8" title="1">lat, err := number(pw.Latitude, "latitude")
+        if err != nil </span><span class="cov8" title="1">{
+                return Place{}, err
+        }</span>
+        <span class="cov8" title="1">lon, err := number(pw.Longitude, "longitude")
+        if err != nil </span><span class="cov0" title="0">{
+                return Place{}, err
+        }</span>
+        <span class="cov8" title="1">return Place{
+                City:              pw.PlaceName,
+                State:             pw.State,
+                StateAbbreviation: pw.StateAbbreviation,
+                Latitude:          lat,
+                Longitude:         lon,
+        }, nil</span>
+}
+
+func number(v *string, field string) (*float64, error) <span class="cov8" title="1">{
+        if v == nil </span><span class="cov8" title="1">{
+                return nil, nil
+        }</span>
+        <span class="cov8" title="1">f, err := strconv.ParseFloat(strings.TrimSpace(*v), 64)
+        if err != nil </span><span class="cov8" title="1">{
+                return nil, &amp;contacts.CoercionError{Field: field, Value: *v, Target: "Number", Err: err}
+        }</span>
+        <span class="cov8" title="1">return &amp;f, nil</span>
+}
+
+// Client performs the lookups of normalize-contacts-flow against one base URL.
+type Client struct {
+        base string
+        http *http.Client
+}
+
+// NewClient creates a client for baseURL (ZIPPOPOTAM_BASE_URL); a nil hc gets a 30-second timeout.
+func NewClient(baseURL string, hc *http.Client) *Client <span class="cov8" title="1">{
+        if hc == nil </span><span class="cov8" title="1">{
+                hc = &amp;http.Client{Timeout: 30 * time.Second}
+        }</span>
+        <span class="cov8" title="1">return &amp;Client{base: strings.TrimRight(baseURL, "/"), http: hc}</span>
+}
+
+// Lookup is &lt;http:request method="GET" path="/{country}/{postalCode}"&gt;; country is lower-cased in
+// the path as the uri-params expression did. A 404 returns an error wrapping ErrNotFound; a
+// connection failure, a timeout, a 500/502/503 answer or a malformed body returns an
+// *UpstreamError; any other non-2xx status is a plain error.
+func (c *Client) Lookup(ctx context.Context, country, postalCode string) (Wire, error) <span class="cov8" title="1">{
+        u := c.base + "/" + url.PathEscape(strings.ToLower(country)) + "/" + url.PathEscape(postalCode)
+        req, err := http.NewRequestWithContext(ctx, http.MethodGet, u, nil)
+        if err != nil </span><span class="cov8" title="1">{
+                return Wire{}, fmt.Errorf("building request for %s: %w", u, err)
+        }</span>
+        <span class="cov8" title="1">req.Header.Set("Accept", "application/json")
+
+        resp, err := c.http.Do(req)
+        if err != nil </span><span class="cov8" title="1">{
+                if ctx.Err() != nil </span><span class="cov8" title="1">{
+                        return Wire{}, fmt.Errorf("HTTP GET on resource '%s': %w", u, ctx.Err())
+                }</span>
+                <span class="cov8" title="1">return Wire{}, &amp;UpstreamError{Msg: fmt.Sprintf("HTTP GET on resource '%s' failed: %v", u, err), Err: err}</span>
+        }
+        <span class="cov8" title="1">defer resp.Body.Close()
+
+        switch resp.StatusCode </span>{
+        case http.StatusNotFound:<span class="cov8" title="1">
+                return Wire{}, fmt.Errorf("%s/%s: %w", country, postalCode, ErrNotFound)</span>
+        case http.StatusInternalServerError, http.StatusBadGateway, http.StatusServiceUnavailable:<span class="cov8" title="1">
+                return Wire{}, &amp;UpstreamError{Msg: fmt.Sprintf("HTTP GET on resource '%s' failed: %d %s", u, resp.StatusCode, http.StatusText(resp.StatusCode))}</span>
+        }
+        <span class="cov8" title="1">if resp.StatusCode &lt; 200 || resp.StatusCode &gt; 299 </span><span class="cov8" title="1">{
+                return Wire{}, fmt.Errorf("HTTP GET on resource '%s' failed: %d %s", u, resp.StatusCode, http.StatusText(resp.StatusCode))
+        }</span>
+
+        <span class="cov8" title="1">var w Wire
+        if err := json.NewDecoder(io.LimitReader(resp.Body, 1&lt;&lt;20)).Decode(&amp;w); err != nil </span><span class="cov8" title="1">{
+                return Wire{}, &amp;UpstreamError{Msg: fmt.Sprintf("HTTP GET on resource '%s' returned malformed JSON: %v", u, err), Err: err}
+        }</span>
+        <span class="cov8" title="1">return w, nil</span>
+}
+</pre>
+		
+		</div>
+	</body>
+	<script>
+	(function() {
+		var files = document.getElementById('files');
+		var visible;
+		files.addEventListener('change', onChange, false);
+		function select(part) {
+			if (visible)
+				visible.style.display = 'none';
+			visible = document.getElementById(part);
+			if (!visible)
+				return;
+			files.value = part;
+			visible.style.display = 'block';
+			location.hash = part;
+		}
+		function onChange() {
+			select(files.value);
+			window.scrollTo(0, 0);
+		}
+		if (location.hash != "") {
+			select(location.hash.substr(1));
+		}
+		if (!visible) {
+			select("file0");
+		}
+	})();
+	</script>
+</html>

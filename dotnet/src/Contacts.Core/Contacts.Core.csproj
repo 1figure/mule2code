@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>Contacts.Core</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Dapper" Version="2.1.35" />
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="8.0.8" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.1" />
+    <PackageReference Include="Npgsql" Version="8.0.4" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The upstream Mule resources are read at run time (schema on start, parse-template for the report). -->
+    <None Include="../../../docker/sqlite/contacts.sqlite.sql" Link="Resources/contacts.sqlite.sql" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="../../../docker/init/01-contacts.sql" Link="Resources/01-contacts.sql" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="../../../mule/batch-contacts-csv-to-db/src/main/resources/parse-template/contacts-batch-report-email.template" Link="Resources/contacts-batch-report-email.template" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+</Project>

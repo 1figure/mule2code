@@ -1,0 +1,58 @@
+#===================================================================================================
+# Mule Application Properties Template
+#===================================================================================================
+
+#---------------------------------------------------------------------------------------------------
+# HTTP Listener on CloudHub
+http_listener:  # Comnmon to HTTP and HTTPS
+  host: "0.0.0.0"
+
+http:
+  port: "8081"
+https:
+  port: "8082"
+
+#---------------------------------------------------------------------------------------------------
+# Batch Job Components Configuration
+batch:
+  job:
+    block_size:   "10000"
+  aggregator:
+    main:
+      size:       "1000"
+
+#---------------------------------------------------------------------------------------------------
+# SFTP Connector Configuration
+sftp:
+  host:           ""
+  port:           ""
+  username:       ""
+  password:       ""
+  working_dir:    ""
+  new_dir:        "new/"
+  processed_dir:  "processed/"
+  failed_dir:     "failed/"
+
+#---------------------------------------------------------------------------------------------------
+# Database Connector Configuration
+postgres_db:
+  host:           ""
+  port:           ""
+  url:            "jdbc:postgresql://${postgres_db.host}:${postgres_db.port}/${postgres_db.db_name}"
+  driver_class:   "org.postgresql.Driver"
+  username:       ""
+  password:       ""
+  db_name:        ""
+
+#---------------------------------------------------------------------------------------------------
+# Email Connector Configuration
+# Settings for Gmail using Application Password - as per https://support.google.com/accounts/answer/185833
+gmail:
+  server:
+    host:         "smtp.gmail.com"
+    port:         "465"
+    username:     ""
+    password:     ""
+  address:
+    from:         ""
+    to:           ""

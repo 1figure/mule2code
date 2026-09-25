@@ -1,0 +1,142 @@
+ok  	muletocode/cmd/api	0.061s	coverage: 86.5% of statements
+ok  	muletocode/cmd/batch	0.164s	coverage: 93.0% of statements
+ok  	muletocode/internal/api	0.193s	coverage: 97.3% of statements
+ok  	muletocode/internal/batch	0.012s	coverage: 98.2% of statements
+ok  	muletocode/internal/config	0.006s	coverage: 100.0% of statements
+ok  	muletocode/internal/contacts	0.027s	coverage: 96.9% of statements
+ok  	muletocode/internal/db	9.356s	coverage: 89.8% of statements
+ok  	muletocode/internal/mapping	0.010s	coverage: [no statements]
+ok  	muletocode/internal/pipeline	1.347s	coverage: 90.2% of statements
+ok  	muletocode/internal/report	0.005s	coverage: 92.3% of statements
+ok  	muletocode/internal/resources	0.007s	coverage: 96.0% of statements
+	muletocode/internal/testutil		coverage: 0.0% of statements
+ok  	muletocode/internal/zippo	0.213s	coverage: 97.6% of statements
+
+=== per function ===
+muletocode/cmd/api/main.go:23:			main			0.0%
+muletocode/cmd/api/main.go:30:			run			94.1%
+muletocode/cmd/batch/main.go:26:		main			0.0%
+muletocode/cmd/batch/main.go:34:		run			100.0%
+muletocode/internal/api/api.go:38:		NewHandler		100.0%
+muletocode/internal/api/api.go:57:		writeError		100.0%
+muletocode/internal/api/api.go:61:		writeJSON		100.0%
+muletocode/internal/api/api.go:70:		recoverer		100.0%
+muletocode/internal/api/contacts.go:54:		ValidateQuery		100.0%
+muletocode/internal/api/contacts.go:72:		RowsToJSON		100.0%
+muletocode/internal/api/contacts.go:96:		getContactsByCity	100.0%
+muletocode/internal/api/normalize.go:26:	TooManyContactsError	100.0%
+muletocode/internal/api/normalize.go:62:	ValidateNormalize	100.0%
+muletocode/internal/api/normalize.go:83:	ZippoToResult		100.0%
+muletocode/internal/api/normalize.go:98:	NotFoundResult		100.0%
+muletocode/internal/api/normalize.go:109:	ResultsToJSON		100.0%
+muletocode/internal/api/normalize.go:117:	normalizeContacts	100.0%
+muletocode/internal/api/normalize.go:178:	hasJSONContentType	75.0%
+muletocode/internal/api/normalize.go:186:	every			100.0%
+muletocode/internal/api/normalize.go:196:	isBlank			100.0%
+muletocode/internal/api/normalize.go:200:	upper			75.0%
+muletocode/internal/api/normalize.go:208:	deref			66.7%
+muletocode/internal/batch/engine.go:37:		String			100.0%
+muletocode/internal/batch/engine.go:62:		Failed			100.0%
+muletocode/internal/batch/engine.go:65:		Fail			100.0%
+muletocode/internal/batch/engine.go:93:		Accepts			100.0%
+muletocode/internal/batch/engine.go:126:	Error			100.0%
+muletocode/internal/batch/engine.go:131:	Unwrap			0.0%
+muletocode/internal/batch/engine.go:152:	Run			100.0%
+muletocode/internal/batch/engine.go:233:	load			100.0%
+muletocode/internal/batch/engine.go:252:	runProcessors		100.0%
+muletocode/internal/batch/engine.go:267:	runAggregator		93.8%
+muletocode/internal/batch/engine.go:300:	exceeds			100.0%
+muletocode/internal/batch/engine.go:305:	fail			100.0%
+muletocode/internal/batch/engine.go:313:	newInstanceID		100.0%
+muletocode/internal/config/config.go:53:	Default			100.0%
+muletocode/internal/config/config.go:70:	FromEnv			100.0%
+muletocode/internal/config/config.go:76:	FromLookup		100.0%
+muletocode/internal/config/config.go:135:	DSN			100.0%
+muletocode/internal/config/config.go:143:	InboxDir		100.0%
+muletocode/internal/config/config.go:146:	ProcessedDir		100.0%
+muletocode/internal/config/config.go:149:	FailedDir		100.0%
+muletocode/internal/config/config.go:152:	ReportsDir		100.0%
+muletocode/internal/config/config.go:154:	parseProfile		100.0%
+muletocode/internal/contacts/coerce.go:19:	Error			100.0%
+muletocode/internal/contacts/coerce.go:25:	Unwrap			0.0%
+muletocode/internal/contacts/coerce.go:31:	parseInt		100.0%
+muletocode/internal/contacts/coerce.go:43:	parseBool		100.0%
+muletocode/internal/contacts/coerce.go:70:	parseISO		100.0%
+muletocode/internal/contacts/coerce.go:85:	parseDate		100.0%
+muletocode/internal/contacts/coerce.go:99:	parseTimestamp		100.0%
+muletocode/internal/contacts/csv.go:23:		ReadRows		89.3%
+muletocode/internal/contacts/csv.go:70:		RowToCSVLine		100.0%
+muletocode/internal/contacts/csv.go:81:		quoteIfNeeded		100.0%
+muletocode/internal/contacts/email.go:17:	IsEmail			100.0%
+muletocode/internal/contacts/email.go:31:	ValidateEmail		100.0%
+muletocode/internal/contacts/model.go:78:	String			100.0%
+muletocode/internal/contacts/model.go:83:	MarshalJSON		100.0%
+muletocode/internal/contacts/model.go:88:	Time			100.0%
+muletocode/internal/contacts/model.go:104:	ParsePrecision		100.0%
+muletocode/internal/contacts/model.go:127:	String			100.0%
+muletocode/internal/contacts/model.go:135:	Time			100.0%
+muletocode/internal/contacts/model.go:143:	MarshalJSON		100.0%
+muletocode/internal/contacts/transform.go:8:	FromRow			100.0%
+muletocode/internal/db/db.go:30:		Error			0.0%
+muletocode/internal/db/db.go:33:		Unwrap			100.0%
+muletocode/internal/db/db.go:63:		Open			95.0%
+muletocode/internal/db/db.go:104:		Profile			100.0%
+muletocode/internal/db/db.go:107:		Close			100.0%
+muletocode/internal/db/db.go:111:		BulkInsert		83.3%
+muletocode/internal/db/db.go:140:		QueryByCity		85.7%
+muletocode/internal/db/db.go:177:		Bind			100.0%
+muletocode/internal/db/db.go:234:		text			100.0%
+muletocode/internal/db/db.go:241:		integer			100.0%
+muletocode/internal/db/db.go:249:		boolean			100.0%
+muletocode/internal/db/db.go:263:		date			100.0%
+muletocode/internal/db/db.go:275:		timestamp		100.0%
+muletocode/internal/db/db.go:285:		nullable		66.7%
+muletocode/internal/db/db.go:292:		applySchema		82.4%
+muletocode/internal/db/db.go:326:		placeholder		100.0%
+muletocode/internal/db/db.go:334:		insertSQL		100.0%
+muletocode/internal/db/db.go:343:		selectSQL		100.0%
+muletocode/internal/pipeline/errors.go:20:	NewErrorRecord		100.0%
+muletocode/internal/pipeline/errors.go:35:	Error			100.0%
+muletocode/internal/pipeline/errors.go:40:	Unwrap			100.0%
+muletocode/internal/pipeline/pipeline.go:44:	New			100.0%
+muletocode/internal/pipeline/pipeline.go:54:	Watch			87.5%
+muletocode/internal/pipeline/pipeline.go:73:	ProcessInbox		90.0%
+muletocode/internal/pipeline/pipeline.go:106:	ProcessFile		100.0%
+muletocode/internal/pipeline/pipeline.go:125:	processFile		85.0%
+muletocode/internal/pipeline/pipeline.go:157:	buildJob		100.0%
+muletocode/internal/pipeline/pipeline.go:208:	insertBlock		100.0%
+muletocode/internal/pipeline/pipeline.go:223:	writeErrorsFile		85.7%
+muletocode/internal/pipeline/pipeline.go:244:	sendReport		90.0%
+muletocode/internal/pipeline/pipeline.go:260:	moveToFailed		62.5%
+muletocode/internal/pipeline/vars.go:24:	initialization		100.0%
+muletocode/internal/report/report.go:29:	KeyStatistics		100.0%
+muletocode/internal/report/report.go:41:	formatMMSS		100.0%
+muletocode/internal/report/report.go:52:	groupThousands		100.0%
+muletocode/internal/report/report.go:74:	Render			75.0%
+muletocode/internal/report/report.go:84:	RenderTemplate		92.3%
+muletocode/internal/report/report.go:111:	formatReportTimestamp	100.0%
+muletocode/internal/report/sink.go:29:		NewFileSink		100.0%
+muletocode/internal/report/sink.go:34:		Send			90.0%
+muletocode/internal/report/sink.go:56:		NewStdoutSink		100.0%
+muletocode/internal/report/sink.go:64:		Send			66.7%
+muletocode/internal/resources/resources.go:25:	Root			100.0%
+muletocode/internal/resources/resources.go:31:	SQLiteSchema		100.0%
+muletocode/internal/resources/resources.go:36:	PostgresSchema		100.0%
+muletocode/internal/resources/resources.go:41:	ReportTemplate		100.0%
+muletocode/internal/resources/resources.go:45:	read			85.7%
+muletocode/internal/resources/resources.go:57:	locate			100.0%
+muletocode/internal/testutil/testutil.go:17:	FixturePath		0.0%
+muletocode/internal/testutil/testutil.go:27:	Fixture			0.0%
+muletocode/internal/testutil/testutil.go:37:	ReadFixture		0.0%
+muletocode/internal/testutil/testutil.go:47:	ReadJSON		0.0%
+muletocode/internal/testutil/testutil.go:56:	Canonical		0.0%
+muletocode/internal/testutil/testutil.go:70:	CopyFixture		0.0%
+muletocode/internal/testutil/testutil.go:81:	AssertJSONEqual		0.0%
+muletocode/internal/testutil/testutil.go:90:	Equal			0.0%
+muletocode/internal/zippo/zippo.go:30:		Error			100.0%
+muletocode/internal/zippo/zippo.go:33:		Unwrap			100.0%
+muletocode/internal/zippo/zippo.go:63:		FromWire		90.0%
+muletocode/internal/zippo/zippo.go:85:		number			100.0%
+muletocode/internal/zippo/zippo.go:103:		NewClient		100.0%
+muletocode/internal/zippo/zippo.go:114:		Lookup			100.0%
+total:						(statements)		90.5%

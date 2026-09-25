@@ -1,0 +1,7 @@
+# Applied only with -p:CollectMetrics=true (see Directory.Build.props): turns on the cyclomatic-complexity
+# analyzer for every method so reports/generate.sh can collect the values.
+is_global = true
+global_level = 100
+
+dotnet_diagnostic.CA1502.severity = warning
+dotnet_code_quality.CA1502.api_surface = all

@@ -1,0 +1,15 @@
+<p>Hello,</p>
+<p>The following is the report for the Contacts batch job on #[now() as String {format: "eeee, MMMM d, u' at 'HH:mm:ss.SSS"}].</p>
+<table>
+  <tbody>
+#[%dw 2.0
+output application/java
+---
+payload map ((item) ->
+	"<tr><td>"
+	++ (item.label default "") ++ "</td><td>"
+	++ (item.value default "") ++ "</td></tr>")
+	joinBy ""]
+  </tbody>
+</table>
+<p>Please do not hesitate to contact the support team with any questions.</p>

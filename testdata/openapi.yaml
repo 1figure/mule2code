@@ -1,0 +1,125 @@
+openapi: "3.0.3"
+info:
+  title: Contacts API (mule-to-code showcase)
+  version: "1.0.0"
+  description: >
+    Contract shared by the Mule app (mule/contacts-api), the C# port (dotnet/) and the Go port (go/).
+    The API tests in both ports assert against this file.
+paths:
+  /contacts:
+    get:
+      summary: Query contacts by mailing city (QUERY pattern)
+      parameters:
+        - name: city
+          in: query
+          required: true
+          schema: { type: string, minLength: 1 }
+        - name: limit
+          in: query
+          required: false
+          schema: { type: integer, minimum: 1, maximum: 500, default: 50 }
+      responses:
+        "200":
+          description: Matching contacts ordered by last_name, first_name, contact_id
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ContactsByCity" }
+        "400": { $ref: "#/components/responses/Error" }
+        "503": { $ref: "#/components/responses/Error" }
+  /contacts/normalize:
+    post:
+      summary: Normalize postal codes through an external service (TRANSLATE / FORWARD pattern)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/NormalizeRequest" }
+      responses:
+        "200":
+          description: One result per input contact, in input order
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/NormalizeResponse" }
+        "400": { $ref: "#/components/responses/Error" }
+        "502": { $ref: "#/components/responses/Error" }
+components:
+  responses:
+    Error:
+      description: Error
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [error]
+            properties:
+              error: { type: string }
+  schemas:
+    ContactsByCity:
+      type: object
+      required: [city, count, contacts]
+      properties:
+        city: { type: string }
+        count: { type: integer }
+        contacts:
+          type: array
+          items: { $ref: "#/components/schemas/ContactView" }
+    ContactView:
+      type: object
+      required: [contact_id, first_name, last_name, email, phone, title, department, mailing]
+      properties:
+        contact_id: { type: string }
+        first_name: { type: string }
+        last_name: { type: string }
+        email: { type: string }
+        phone: { type: string }
+        title: { type: string }
+        department: { type: string }
+        mailing:
+          type: object
+          required: [street, city, state, postal_code, country]
+          properties:
+            street: { type: string }
+            city: { type: string }
+            state: { type: string }
+            postal_code: { type: string }
+            country: { type: string }
+    NormalizeRequest:
+      type: object
+      required: [contacts]
+      properties:
+        contacts:
+          type: array
+          minItems: 1
+          maxItems: 50
+          items:
+            type: object
+            required: [mailing_postal_code, mailing_country]
+            properties:
+              contact_id: { type: string }
+              mailing_postal_code: { type: string, minLength: 1 }
+              mailing_country: { type: string, minLength: 1, description: ISO 3166-1 alpha-2, any case }
+    NormalizeResponse:
+      type: object
+      required: [count, results]
+      properties:
+        count: { type: integer }
+        results:
+          type: array
+          items:
+            type: object
+            required: [contact_id, postal_code, country, status, place]
+            properties:
+              contact_id: { type: string, nullable: true }
+              postal_code: { type: string }
+              country: { type: string, description: upper-cased }
+              status: { type: string, enum: [ok, not_found] }
+              place:
+                nullable: true
+                type: object
+                required: [city, state, state_abbreviation, latitude, longitude]
+                properties:
+                  city: { type: string }
+                  state: { type: string }
+                  state_abbreviation: { type: string }
+                  latitude: { type: number }
+                  longitude: { type: number }

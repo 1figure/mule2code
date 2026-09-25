@@ -1,0 +1,10 @@
+{
+  "count": 3,
+  "results": [
+    { "contact_id": "003Hu0000000001IAA", "postal_code": "63131", "country": "US", "status": "ok",
+      "place": { "city": "Saint Louis", "state": "Missouri", "state_abbreviation": "MO", "latitude": 38.6171, "longitude": -90.4504 } },
+    { "contact_id": "003Hu0000000002IAA", "postal_code": "91499", "country": "US", "status": "ok",
+      "place": { "city": "Van Nuys", "state": "California", "state_abbreviation": "CA", "latitude": 33.7866, "longitude": -118.2987 } },
+    { "contact_id": "003Hu0000000099IAA", "postal_code": "00000", "country": "US", "status": "not_found", "place": null }
+  ]
+}

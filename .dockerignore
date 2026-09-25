@@ -1,0 +1,4 @@
+# Build context for docker/mule-ce/Dockerfile is the repository root; only the API project is needed.
+*
+!mule/contacts-api
+mule/contacts-api/target

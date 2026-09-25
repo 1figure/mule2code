@@ -1,0 +1,189 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mule xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns:sftp="http://www.mulesoft.org/schema/mule/sftp"
+	xmlns:email="http://www.mulesoft.org/schema/mule/email" xmlns:validation="http://www.mulesoft.org/schema/mule/validation"
+	xmlns:db="http://www.mulesoft.org/schema/mule/db"
+	xmlns:batch="http://www.mulesoft.org/schema/mule/batch" xmlns:file="http://www.mulesoft.org/schema/mule/file" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd 
+http://www.mulesoft.org/schema/mule/email http://www.mulesoft.org/schema/mule/email/current/mule-email.xsd http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/file http://www.mulesoft.org/schema/mule/file/current/mule-file.xsd
+http://www.mulesoft.org/schema/mule/batch http://www.mulesoft.org/schema/mule/batch/current/mule-batch.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
+http://www.mulesoft.org/schema/mule/validation http://www.mulesoft.org/schema/mule/validation/current/mule-validation.xsd
+http://www.mulesoft.org/schema/mule/sftp http://www.mulesoft.org/schema/mule/sftp/current/mule-sftp.xsd">
+	<flow name="contacts-batch-process-flow" doc:id="fca2773d-e6dc-472a-bdaa-089da3c01b12" >
+		<sftp:listener doc:name="On New or Updated File" doc:id="30ea3002-65f1-454e-825e-7b22c93a505d" config-ref="SFTP_Configuration" applyPostActionWhenFailed="false" directory="${sftp.new_dir}" autoDelete="true" moveToDirectory="${sftp.processed_dir}" renameTo="#[vars.newFilename]" outputMimeType="application/csv; header=true" recursive="false">
+			<scheduling-strategy >
+				<fixed-frequency/>
+			</scheduling-strategy>
+		</sftp:listener>
+		<logger level="TRACE" doc:name="Trace - Flow Starting" doc:id="cc1035dd-eb22-48c5-9e80-27b1df5ca614" message="Flow starting"/>
+		<logger level="TRACE" doc:name="Trace - Batch Configurations" doc:id="6a9d88c4-526b-49cd-bae0-9a1a14f83bcc" message='#["Batch configurations - Batch block size: " ++ p("batch.job.block_size") ++ " - Main aggregator size: " ++ p("batch.aggregator.main.size")]'/>
+		<flow-ref doc:name="initialization-flow" doc:id="232f0e9b-eafb-488e-bbd6-cd967f9a174a" name="initialization-flow"/>
+		<logger level="TRACE" doc:name="Trace - Transforming Data" doc:id="dfa0c19b-a6e0-42fa-83fe-99673e16b161" message="Transforming input data to Java" />
+		<ee:transform doc:name="CSV to Java" doc:id="4d5aad3b-8cbd-4166-b9de-02c808ddf3ab">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/java
+---
+payload as Iterator]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<logger level="TRACE" doc:name="Trace - Staging Batch Job" doc:id="62f88264-e34a-4cfc-971c-66ff286b8e48" message="Staging Batch Job" />
+		<batch:job jobName="file-processing-job" doc:id="5f305767-0e1f-4eb4-9dd5-a085a7fe704f" maxFailedRecords="-1" blockSize="${batch.job.block_size}">
+			<batch:process-records >
+				<batch:step name="main-processing-step" doc:id="4b0247b5-3ae7-4d8a-82e4-f323c3011eb8" >
+					<batch:aggregator doc:name="main-records-aggregator" doc:id="49515385-4c84-48c1-b078-adf0532b2685" size="${batch.aggregator.main.size}" preserveMimeTypes="true" >
+						<ee:transform doc:name="CSV to SQL" doc:id="d458f945-6ae4-4694-b7c5-7a0ffc42dc1a">
+						<ee:message>
+							<ee:set-payload><![CDATA[%dw 2.0
+output application/java
+---
+payload map ( payload01 , indexOfPayload01 ) -> {
+	account_id: payload01.account_id,
+	active_tracker_count: payload01.active_tracker_count as Number,
+	assistant_name: payload01.assistant_name,
+	assistant_phone: payload01.assistant_phone,
+	birthdate: payload01.birthdate as Date,
+	can_allow_portal_self_reg: payload01.can_allow_portal_self_reg as Boolean,
+	contact_id: payload01.contact_id,
+	contact_name: payload01.contact_name,
+	created_by_id: payload01.created_by_id,
+	created_date: payload01.created_date as Date,
+	currency_iso_code: payload01.currency_iso_code,
+	department: payload01.department,
+	do_not_call: payload01.do_not_call as Boolean,
+	email: payload01.email,
+	external_id: payload01.external_id,
+	fax: payload01.fax,
+	first_name: payload01.first_name,
+	has_opted_out_of_email: payload01.has_opted_out_of_email as Boolean,
+	has_opted_out_of_fax: payload01.has_opted_out_of_fax as Boolean,
+	has_privacy_hold: payload01.has_privacy_hold as Boolean,
+	home_phone: payload01.home_phone,
+	is_deleted: payload01.is_deleted as Boolean,
+	is_email_bounced: payload01.is_email_bounced as Boolean,
+	is_locked: payload01.is_locked as Boolean,
+	is_person_account: payload01.is_person_account as Boolean,
+	is_priority_record: payload01.is_priority_record as Boolean,
+	last_modified_by_id: payload01.last_modified_by_id,
+	last_modified_date: payload01.last_modified_date as Date,
+	last_name: payload01.last_name,
+	lead_source: payload01.lead_source,
+	mailing_city: payload01.mailing_city,
+	mailing_country: payload01.mailing_country,
+	mailing_postal_code: payload01.mailing_postal_code,
+	mailing_state: payload01.mailing_state,
+	mailing_street: payload01.mailing_street,
+	may_edit: payload01.may_edit as Boolean,
+	middle_name: payload01.middle_name,
+	mobile_phone: payload01.mobile_phone,
+	other_city: payload01.other_city,
+	other_country: payload01.other_country,
+	other_phone: payload01.other_phone,
+	other_postal_code: payload01.other_postal_code,
+	other_state: payload01.other_state,
+	other_street: payload01.other_street,
+	owner_id: payload01.owner_id,
+	phone: payload01.phone,
+	photo_url: payload01.photo_url,
+	record_type_id: payload01.record_type_id,
+	salutation: payload01.salutation,
+	suffix: payload01.suffix,
+	system_mod_stamp: payload01.system_mod_stamp as Date,
+	title: payload01.title
+}]]></ee:set-payload>
+						</ee:message>
+					</ee:transform>
+						<db:bulk-insert doc:id="29632d6e-1b04-4a35-8950-d01bbf8af61b" config-ref="Postgres_Database_Config" doc:name="Contact Data">
+						<db:sql><![CDATA[INSERT INTO public.contacts(account_id, active_tracker_count, assistant_name, assistant_phone, birthdate, can_allow_portal_self_reg, contact_id, contact_name, created_by_id, created_date, currency_iso_code, department, do_not_call, email, external_id, fax, first_name, has_opted_out_of_email, has_opted_out_of_fax, has_privacy_hold, home_phone, is_deleted, is_email_bounced, is_locked, is_person_account, is_priority_record, last_modified_by_id, last_modified_date, last_name, lead_source, mailing_city, mailing_country, mailing_postal_code, mailing_state, mailing_street, may_edit, middle_name, mobile_phone, other_city, other_country, other_phone, other_postal_code, other_state, other_street, owner_id, phone, photo_url, record_type_id, salutation, suffix, system_mod_stamp, title)
+VALUES (:account_id, :active_tracker_count, :assistant_name, :assistant_phone, :birthdate, :can_allow_portal_self_reg, :contact_id, :contact_name, :created_by_id, :created_date, :currency_iso_code, :department, :do_not_call, :email, :external_id, :fax, :first_name, :has_opted_out_of_email, :has_opted_out_of_fax, :has_privacy_hold, :home_phone, :is_deleted, :is_email_bounced, :is_locked, :is_person_account, :is_priority_record, :last_modified_by_id, :last_modified_date, :last_name, :lead_source, :mailing_city, :mailing_country, :mailing_postal_code, :mailing_state, :mailing_street, :may_edit, :middle_name, :mobile_phone, :other_city, :other_country, :other_phone, :other_postal_code, :other_state, :other_street, :owner_id, :phone, :photo_url, :record_type_id, :salutation, :suffix, :system_mod_stamp, :title)]]></db:sql>
+					</db:bulk-insert>
+					</batch:aggregator>
+					<validation:is-email doc:name="Is email" doc:id="3a5e1a7b-797e-4f93-b3d2-88d957d50426" config-ref="Validation_Config" email="#[payload.email]" message="Missing or invalid email"/>
+				</batch:step>
+				<batch:step name="failed-records-processing-step" doc:id="bf6dcd43-b733-4430-bba0-7c87e6ce5e75" acceptPolicy="ONLY_FAILURES" >
+					<batch:aggregator doc:name="failed-records-aggregator" doc:id="ed8bce38-4287-4917-abab-b032ccdbf55f" preserveMimeTypes="true" streaming="true">
+						<logger level="TRACE" doc:name="Trace - Writing Errors to File" doc:id="7917748a-0c4b-4e92-b3e5-d825d0099541" message="Writing errors/failed records to file" />
+						<sftp:write doc:name="Error Records" doc:id="e2aeb552-2049-48e6-b092-21ed9eceb1e0" config-ref="SFTP_Configuration" createParentDirectories="false" path='#[p("sftp.processed_dir") ++ vars.errorsFilename]'>
+							<sftp:content ><![CDATA[#[output application/json --- payload]]]></sftp:content>
+						</sftp:write>
+					</batch:aggregator>
+					<ee:transform doc:name="Create Error Record" doc:id="d7de2e2e-7376-4dc0-8cba-ffb6379ebc94" >
+						<ee:message >
+							<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	Error: Batch::getFirstException().message,
+	Record: write(payload, "application/csv", {"header":false, "lineSeparator":""})	
+}
+
+]]></ee:set-payload>
+						</ee:message>
+					</ee:transform>
+				</batch:step>
+			</batch:process-records>
+			<batch:on-complete >
+				<logger level="TRACE" doc:name="Trace - Batch Job Statistics" doc:id="86e1565d-1078-4689-8d79-da0dc68c06e1" message="#[output application/json --- payload]" />
+				<flow-ref doc:name="send-email-report-flow" doc:id="66ee3ed8-f825-4386-ae01-e00cf726f347" name="send-email-report-flow"/>
+				<logger level="TRACE" doc:name="Trace - Batch Job Completed" doc:id="f25a92d5-4b5a-40ab-93c5-36f8c8b07a1b" message="Batch job completed" />
+			</batch:on-complete>
+		</batch:job>
+		<logger level="TRACE" doc:name="Trace - Batch Job Started" doc:id="83127d7d-8423-43b8-8ca2-0c1411308c05" message="Batch job successfully started" />
+		<logger level="TRACE" doc:name="Trace - Flow Ending" doc:id="8538ef94-8595-4773-b3f2-c680806ddc29" message="Flow ending" />
+		<error-handler >
+			<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="451210c0-5f22-4392-bd49-8f15855a1a4e" type="ANY">
+				<logger level="ERROR" doc:name="ERROR - Failed Processing File" doc:id="e7a416ab-35f5-492c-a863-f02c074f822e" message='Failed processing file #[vars.currentFilename]' />
+				<sftp:move doc:name="File to Failed Directory" doc:id="3318a5b5-aab1-431f-8929-99bd8a88e90c" config-ref="SFTP_Configuration" sourcePath='#[p("sftp.new_dir") ++ vars.currentFilename]' targetPath='#[p("sftp.failed_dir")]' createParentDirectories="false"/>
+			</on-error-propagate>
+		</error-handler>
+	</flow>
+	<flow name="initialization-flow" doc:id="1410f9c1-9142-4cd1-931e-f5a76fe4b14f">
+		<set-variable value="#[dw::util::Timer::currentMilliseconds()]" doc:name="startTime" doc:id="deb49e34-59de-44ed-9811-052bb0cfaf6a" variableName="startTime" />
+		<set-variable value='#[attributes.fileName default "x.x"]' doc:name="currentFilename" doc:id="b7009f6c-d86b-404e-9215-c503f7c42ac4" variableName="currentFilename" />
+		<set-variable value="#[now() as String {format: &quot;uuuuMMdd'T'HHmmssSSS&quot;}]" doc:name="timestamp" doc:id="49a35c29-208f-4790-8281-4d43e80332b3" variableName="timestamp" />
+		<set-variable value='#[(vars.currentFilename splitBy("."))[0] ++ "." ++ vars.timestamp ++ "." ++ (vars.currentFilename splitBy("."))[1]]' doc:name="newFilename" doc:id="6be3bd33-e5cd-4178-954f-d53d905942a8" variableName="newFilename" />
+		<set-variable value='#[(vars.currentFilename splitBy("."))[0] ++ "." ++ vars.timestamp ++ ".errors.json"]' doc:name="errorsFilename" doc:id="d729c499-84a8-49aa-b0aa-6c21d79e4f95" variableName="errorsFilename" />
+	</flow>
+	<flow name="send-email-report-flow" doc:id="4cedb60d-416e-4b14-a00d-4b89821e33ac" >
+		<logger level="TRACE" doc:name="Trace - Sending Email Report" doc:id="81d3117d-f3cd-4bb3-a982-34ba5ca2160f" message="Sending contacts batch report email" />
+		<ee:transform doc:name="Extract Key Statistics" doc:id="d0b1e8d0-550a-4b66-aea4-f1391b89d594" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+var processingTime = dw::util::Timer::currentMilliseconds() - (vars.startTime default 0)
+---
+[
+	{
+		label: "Processed file:",
+		value: vars.currentFilename
+	},{
+		label: "Processing time:",
+		value: (processingTime as DateTime{ unit: "milliseconds" }) as String {format: "mm:ss.SSS"}
+	},{
+		label: "Records read:",
+		value: payload.totalRecords as String {format: "#,###"}
+	},{
+		label: "Successful records:",
+		value: payload.successfulRecords as String {format: "#,###"}
+	},{
+		label: "Failed records:",
+		value: payload.failedRecords as String {format: "#,###"}
+	}
+]]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<parse-template doc:name="Create Email Body" doc:id="a7a09ced-a527-4ecf-ad46-2187c57ff3ab" target="emailBody" location="parse-template/contacts-batch-report-email.template" />
+		<email:send doc:name="Contacts Batch Report Email" doc:id="a82df699-c40b-4ce1-88b4-325556fbeac0" config-ref="Email_Gmail_Config" fromAddress="${gmail.address.from}" subject="Mule Contacts Batch Job Report">
+			<email:to-addresses >
+				<email:to-address value="${gmail.address.to}" />
+			</email:to-addresses>
+			<email:body contentType="text/html">
+				<email:content ><![CDATA[#[vars.emailBody]]]></email:content>
+			</email:body>
+		</email:send>
+		<logger level="TRACE" doc:name="Trace - Email Sent Successfully" doc:id="aa89dc65-ee2a-41c2-9812-d5395ff91ec7" message="Contacts batch report email sent successfully" />
+	</flow>
+</mule>

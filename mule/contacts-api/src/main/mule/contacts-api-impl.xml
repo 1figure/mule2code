@@ -1,0 +1,173 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+     MODIFIED (mule-to-code, 2026-09-25): this is not the file the ports were generated from.
+     The four DataWeave transforms were originally <ee:transform> (Transform Message) blocks. That
+     component lives in the EE-only "ee" namespace, which the community Mule Kernel does not provide,
+     so they are now <set-payload value="#[%dw 2.0 ...]"> — the same DataWeave, byte for byte, run
+     by the same DataWeave service, through a core component.
+     Second change, same date: the 400 handler of get-contacts-by-city-flow listed
+     VALIDATION:INVALID_STRING and VALIDATION:NOT_A_NUMBER, which the Validation module does not
+     define (the mule-maven-plugin refuses to package the app). It now lists the error types the two
+     validators actually raise: VALIDATION:BLANK_STRING and VALIDATION:INVALID_NUMBER. Same intent,
+     same HTTP status.
+     Third change, same date: the two validation:is-true expressions of normalize-contacts-flow used
+     `vars.contacts every (...)`; `every` is not a core DataWeave function (it is in dw::core::Arrays)
+     and the runtime rejected every request with "Unable to resolve reference of: every". They now
+     call dw::core::Arrays::every(vars.contacts, ...) with the same lambda. Nothing else changed.
+     See README.md.
+-->
+<mule xmlns:validation="http://www.mulesoft.org/schema/mule/validation"
+	xmlns:db="http://www.mulesoft.org/schema/mule/db"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="
+http://www.mulesoft.org/schema/mule/validation http://www.mulesoft.org/schema/mule/validation/current/mule-validation.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd">
+
+	<!-- ============================================================================================
+	     Flow 1: QUERY pattern.  GET /contacts?city=Saint%20Louis&limit=20
+	     HTTP listener -> validate query param -> db:select -> DataWeave to a compact JSON view
+	     ============================================================================================ -->
+	<flow name="get-contacts-by-city-flow">
+		<http:listener doc:name="GET /contacts" config-ref="HTTP_Listener_config" path="/contacts" allowedMethods="GET">
+			<http:response statusCode="#[vars.httpStatus default 200]" />
+			<http:error-response statusCode="#[vars.httpStatus default 500]">
+				<http:body><![CDATA[#[output application/json --- {error: error.description}]]]></http:body>
+			</http:error-response>
+		</http:listener>
+
+		<set-variable variableName="city" value="#[attributes.queryParams.city default '']" doc:name="city" />
+		<set-variable variableName="limit" value="#[(attributes.queryParams.limit default '50') as Number]" doc:name="limit" />
+
+		<validation:is-not-blank-string doc:name="city is required" config-ref="Validation_Config" value="#[vars.city]" message="Query parameter 'city' is required" />
+		<validation:is-number doc:name="limit in range" config-ref="Validation_Config" value="#[vars.limit]" numberType="INTEGER" minValue="1" maxValue="500" message="Query parameter 'limit' must be between 1 and 500" />
+
+		<db:select doc:name="Select contacts by city" config-ref="Contacts_Database_Config">
+			<db:sql><![CDATA[SELECT contact_id, first_name, last_name, email, phone, title, department,
+       mailing_street, mailing_city, mailing_state, mailing_postal_code, mailing_country
+FROM contacts
+WHERE LOWER(mailing_city) = LOWER(:city)
+ORDER BY last_name, first_name, contact_id
+LIMIT :limit]]></db:sql>
+			<db:input-parameters><![CDATA[#[{ city: vars.city, limit: vars.limit }]]]></db:input-parameters>
+		</db:select>
+
+		<set-payload doc:name="Rows to JSON" value="#[%dw 2.0
+output application/json
+---
+{
+	city: vars.city,
+	count: sizeOf(payload),
+	contacts: payload map (row) -> {
+		contact_id: row.contact_id,
+		first_name: row.first_name,
+		last_name: row.last_name,
+		email: row.email,
+		phone: row.phone,
+		title: row.title,
+		department: row.department,
+		mailing: {
+			street: row.mailing_street,
+			city: row.mailing_city,
+			state: row.mailing_state,
+			postal_code: row.mailing_postal_code,
+			country: row.mailing_country
+		}
+	}
+}]" />
+
+		<error-handler>
+			<on-error-propagate type="VALIDATION:BLANK_STRING, VALIDATION:INVALID_NUMBER" doc:name="400">
+				<set-variable variableName="httpStatus" value="400" />
+			</on-error-propagate>
+			<on-error-propagate type="DB:CONNECTIVITY, DB:QUERY_EXECUTION" doc:name="503">
+				<set-variable variableName="httpStatus" value="503" />
+				<logger level="ERROR" message="#['Database error: ' ++ error.description]" />
+			</on-error-propagate>
+		</error-handler>
+	</flow>
+
+	<!-- ============================================================================================
+	     Flow 2: TRANSLATE / FORWARD pattern.  POST /contacts/normalize
+	     HTTP listener -> validate body -> for each contact: http:request to zippopotam.us
+	     -> merge the external answer into our own shape -> JSON
+	     ============================================================================================ -->
+	<flow name="normalize-contacts-flow">
+		<http:listener doc:name="POST /contacts/normalize" config-ref="HTTP_Listener_config" path="/contacts/normalize" allowedMethods="POST">
+			<http:response statusCode="#[vars.httpStatus default 200]" />
+			<http:error-response statusCode="#[vars.httpStatus default 500]">
+				<http:body><![CDATA[#[output application/json --- {error: error.description}]]]></http:body>
+			</http:error-response>
+		</http:listener>
+
+		<set-variable variableName="contacts" value="#[payload.contacts default []]" doc:name="contacts" />
+		<validation:is-true doc:name="contacts present" config-ref="Validation_Config" expression="#[sizeOf(vars.contacts) > 0]" message="Body must contain a non-empty 'contacts' array" />
+		<validation:is-true doc:name="contacts not too many" config-ref="Validation_Config" expression="#[sizeOf(vars.contacts) &lt;= (p('normalize.max_contacts') as Number)]" message="#['At most ' ++ p('normalize.max_contacts') ++ ' contacts per request']" />
+		<validation:all doc:name="each contact has postal code and country">
+			<validation:is-true expression="#[dw::core::Arrays::every(vars.contacts, (c) -> !isBlank(c.mailing_postal_code default ''))]" message="Every contact needs 'mailing_postal_code'" />
+			<validation:is-true expression="#[dw::core::Arrays::every(vars.contacts, (c) -> !isBlank(c.mailing_country default ''))]" message="Every contact needs 'mailing_country'" />
+		</validation:all>
+
+		<set-variable variableName="results" value="#[[]]" doc:name="results" />
+
+		<foreach doc:name="For each contact" collection="#[vars.contacts]">
+			<set-variable variableName="contact" value="#[payload]" doc:name="contact" />
+			<try doc:name="Try lookup">
+				<http:request method="GET" doc:name="GET /{country}/{postal-code}" config-ref="Zippopotam_Request_config" path="/{country}/{postalCode}">
+					<http:uri-params><![CDATA[#[{ country: lower(vars.contact.mailing_country), postalCode: vars.contact.mailing_postal_code }]]]></http:uri-params>
+				</http:request>
+				<set-payload doc:name="Zippopotam to result" value='#[%dw 2.0
+output application/java
+var place = payload.places[0]
+---
+{
+	contact_id: vars.contact.contact_id,
+	postal_code: vars.contact.mailing_postal_code,
+	country: upper(vars.contact.mailing_country),
+	status: "ok",
+	place: {
+		city: place."place name",
+		state: place.state,
+		state_abbreviation: place."state abbreviation",
+		latitude: place.latitude as Number,
+		longitude: place.longitude as Number
+	}
+}]' />
+				<error-handler>
+					<on-error-continue type="HTTP:NOT_FOUND" doc:name="404 -> not_found">
+						<set-payload doc:name="Not found result" value='#[%dw 2.0
+output application/java
+---
+{
+	contact_id: vars.contact.contact_id,
+	postal_code: vars.contact.mailing_postal_code,
+	country: upper(vars.contact.mailing_country),
+	status: "not_found",
+	place: null
+}]' />
+					</on-error-continue>
+				</error-handler>
+			</try>
+			<set-variable variableName="results" value="#[vars.results + payload]" doc:name="append result" />
+		</foreach>
+
+		<set-payload doc:name="Results to JSON" value="#[%dw 2.0
+output application/json
+---
+{
+	count: sizeOf(vars.results),
+	results: vars.results
+}]" />
+
+		<error-handler>
+			<on-error-propagate type="VALIDATION:INVALID_BOOLEAN, VALIDATION:MULTIPLE, EXPRESSION" doc:name="400">
+				<set-variable variableName="httpStatus" value="400" />
+			</on-error-propagate>
+			<on-error-propagate type="HTTP:CONNECTIVITY, HTTP:TIMEOUT, HTTP:INTERNAL_SERVER_ERROR, HTTP:SERVICE_UNAVAILABLE, HTTP:BAD_GATEWAY" doc:name="502">
+				<set-variable variableName="httpStatus" value="502" />
+				<logger level="ERROR" message="#['Upstream error: ' ++ error.description]" />
+			</on-error-propagate>
+		</error-handler>
+	</flow>
+</mule>

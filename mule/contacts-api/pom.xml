@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<groupId>io.github.mule-to-code</groupId>
+	<artifactId>contacts-api</artifactId>
+	<version>1.0.0</version>
+	<packaging>mule-application</packaging>
+	<name>contacts-api</name>
+
+	<properties>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<app.runtime>4.12.0</app.runtime>
+		<!-- mule-to-code, 2026-09-25: was 4.4.0, which cannot package HTTP connector 1.12.1
+		     (EnumConstantNotPresentException JavaVersion.JAVA_25); see README.md -->
+		<mule.maven.plugin.version>4.10.1</mule.maven.plugin.version>
+	</properties>
+
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>org.mule.tools.maven</groupId>
+				<artifactId>mule-maven-plugin</artifactId>
+				<version>${mule.maven.plugin.version}</version>
+				<extensions>true</extensions>
+				<configuration>
+					<sharedLibraries>
+						<sharedLibrary><groupId>org.postgresql</groupId><artifactId>postgresql</artifactId></sharedLibrary>
+						<sharedLibrary><groupId>org.xerial</groupId><artifactId>sqlite-jdbc</artifactId></sharedLibrary>
+					</sharedLibraries>
+				</configuration>
+			</plugin>
+		</plugins>
+	</build>
+
+	<dependencies>
+		<dependency><groupId>org.postgresql</groupId><artifactId>postgresql</artifactId><version>42.7.5</version></dependency>
+		<dependency><groupId>org.xerial</groupId><artifactId>sqlite-jdbc</artifactId><version>3.49.1.0</version></dependency>
+		<!-- mule-to-code, 2026-09-25: was 1.10.3, which fails to initialise on runtime 4.12
+		     (NoClassDefFoundError org.mule.runtime.core.api.util.ClassUtils); see README.md -->
+		<dependency><groupId>org.mule.connectors</groupId><artifactId>mule-http-connector</artifactId><version>1.12.1</version><classifier>mule-plugin</classifier></dependency>
+		<dependency><groupId>org.mule.connectors</groupId><artifactId>mule-db-connector</artifactId><version>1.16.4</version><classifier>mule-plugin</classifier></dependency>
+		<dependency><groupId>org.mule.modules</groupId><artifactId>mule-validation-module</artifactId><version>2.0.11</version><classifier>mule-plugin</classifier></dependency>
+	</dependencies>
+
+	<repositories>
+		<repository><id>anypoint-exchange-v3</id><name>Anypoint Exchange</name><url>https://maven.anypoint.mulesoft.com/api/v3/maven</url><layout>default</layout></repository>
+		<repository><id>mulesoft-releases</id><name>MuleSoft Releases Repository</name><url>https://repository.mulesoft.org/releases/</url><layout>default</layout></repository>
+	</repositories>
+	<pluginRepositories>
+		<pluginRepository><id>mulesoft-releases</id><name>MuleSoft Releases Repository</name><layout>default</layout><url>https://repository.mulesoft.org/releases/</url><snapshots><enabled>false</enabled></snapshots></pluginRepository>
+	</pluginRepositories>
+</project>

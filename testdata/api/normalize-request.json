@@ -1,0 +1,7 @@
+{
+  "contacts": [
+    { "contact_id": "003Hu0000000001IAA", "mailing_postal_code": "63131", "mailing_country": "US" },
+    { "contact_id": "003Hu0000000002IAA", "mailing_postal_code": "91499", "mailing_country": "us" },
+    { "contact_id": "003Hu0000000099IAA", "mailing_postal_code": "00000", "mailing_country": "US" }
+  ]
+}

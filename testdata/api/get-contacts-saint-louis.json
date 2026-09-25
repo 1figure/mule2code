@@ -1,0 +1,38 @@
+{
+  "city": "Saint Louis",
+  "count": 2,
+  "contacts": [
+    {
+      "contact_id": "003Hu0000000054IAA",
+      "first_name": "Cord",
+      "last_name": "Hugenin",
+      "email": "mhugenin1x5k@bing.com",
+      "phone": "3141219627",
+      "title": "Recruiter",
+      "department": "Sales",
+      "mailing": {
+        "street": "6 Dapin Parkway",
+        "city": "Saint Louis",
+        "state": "MO",
+        "postal_code": "63136",
+        "country": "US"
+      }
+    },
+    {
+      "contact_id": "003Hu0000000001IAA",
+      "first_name": "Robenia",
+      "last_name": "Punton",
+      "email": "ypunton1y9w@flavors.me",
+      "phone": "6364186648",
+      "title": "Pharmacist",
+      "department": "Engineering",
+      "mailing": {
+        "street": "1 Heath Pass",
+        "city": "Saint Louis",
+        "state": "MO",
+        "postal_code": "63131",
+        "country": "US"
+      }
+    }
+  ]
+}

@@ -1,0 +1,43 @@
+# mule-to-code fork: "sqlite" profile. Select it with -Denv=sqlite (or edit the global-property in global.xml).
+# Same file layout as mule-props.template.yaml; only the database section differs from the postgres profile.
+# NOTE: the JDBC URL must be an ABSOLUTE path - relative paths resolve unpredictably inside the Mule container.
+http_listener:
+  host: "0.0.0.0"
+http:
+  port: "8081"
+https:
+  port: "8082"
+
+batch:
+  job:
+    block_size:   "10000"
+  aggregator:
+    main:
+      size:       "1000"
+
+sftp:
+  host:           "localhost"
+  port:           "2222"
+  username:       "mule"
+  password:       "mule"
+  working_dir:    "/data"
+  new_dir:        "new/"
+  processed_dir:  "processed/"
+  failed_dir:     "failed/"
+
+# Generic JDBC connection to a SQLite file. Create the schema with docker/sqlite/contacts.sqlite.sql first.
+postgres_db:
+  url:            "jdbc:sqlite:/ABSOLUTE/PATH/TO/data/contacts.db"
+  driver_class:   "org.sqlite.JDBC"
+  username:       ""
+  password:       ""
+
+gmail:
+  server:
+    host:         "smtp.gmail.com"
+    port:         "465"
+    username:     ""
+    password:     ""
+  address:
+    from:         ""
+    to:           ""

@@ -1,0 +1,77 @@
+Passed!  - Failed:     0, Passed:   233, Skipped:     0, Total:   233, Duration: 6 s - Contacts.Tests.dll (net8.0)
+
+Summary
+  Generated on: 9/25/2026 - 3:17:01 PM
+  Coverage date: 9/25/2026 - 3:16:59 PM
+  Parser: Cobertura
+  Assemblies: 3
+  Classes: 49
+  Files: 30
+  Line coverage: 92.4%
+  Covered lines: 1619
+  Uncovered lines: 133
+  Coverable lines: 1752
+  Total lines: 2722
+  Branch coverage: 85.5% (366 of 428)
+  Covered branches: 366
+  Total branches: 428
+  Method coverage: 98.6% (291 of 295)
+  Full method coverage: 93.5% (276 of 295)
+  Covered methods: 291
+  Fully covered methods: 276
+  Total methods: 295
+
+Contacts.Api                                        96.5%
+  Contacts.Api.ContactsEndpoints                     100%
+  Contacts.Api.ErrorBody                             100%
+  Program                                           86.3%
+
+Contacts.Batch                                      80.8%
+  Contacts.Batch.Program                            80.8%
+
+Contacts.Core                                       92.7%
+  Contacts.Core.Api.ContactsByCityView               100%
+  Contacts.Core.Api.ContactsQuery                    100%
+  Contacts.Core.Api.ContactView                      100%
+  Contacts.Core.Api.MailingView                      100%
+  Contacts.Core.Api.Normalize                        100%
+  Contacts.Core.Api.NormalizeContact                 100%
+  Contacts.Core.Api.NormalizeRequest                 100%
+  Contacts.Core.Api.NormalizeResponse                100%
+  Contacts.Core.Api.NormalizeResult                  100%
+  Contacts.Core.Api.PlaceView                        100%
+  Contacts.Core.Batch.BatchInputException            100%
+  Contacts.Core.Batch.BatchJob<T>                     98%
+  Contacts.Core.Batch.BatchRecord<T>                 100%
+  Contacts.Core.Batch.BatchStatistics                100%
+  Contacts.Core.Batch.BatchStep<T>                   100%
+  Contacts.Core.Csv.CsvFormatException               100%
+  Contacts.Core.Csv.CsvRows                          100%
+  Contacts.Core.Data.ContactRow                      100%
+  Contacts.Core.Data.RepositoryException             100%
+  Contacts.Core.Data.SqlContactRepository           90.5%
+  Contacts.Core.Mapping.Coerce                       100%
+  Contacts.Core.Mapping.CoercionException            100%
+  Contacts.Core.Mapping.ContactMapper                100%
+  Contacts.Core.Model.Contact                        100%
+  Contacts.Core.Model.Timestamp                      100%
+  Contacts.Core.Model.TimestampJsonConverter         100%
+  Contacts.Core.Pipeline.ContactsPipeline           91.9%
+  Contacts.Core.Pipeline.ErrorRecord                 100%
+  Contacts.Core.Pipeline.PipelineException           100%
+  Contacts.Core.Pipeline.RunVars                     100%
+  Contacts.Core.Report.BatchReport                   100%
+  Contacts.Core.Report.ConsoleReportSink             100%
+  Contacts.Core.Report.FileReportSink                100%
+  Contacts.Core.Report.ReportItem                    100%
+  Contacts.Core.Resources                            100%
+  Contacts.Core.Settings.AppSettings                 100%
+  Contacts.Core.Settings.SettingsException           100%
+  Contacts.Core.Validation.EmailValidation           100%
+  Contacts.Core.Validation.InvalidEmailException     100%
+  Contacts.Core.Zippo.PostalCodeNotFoundException   85.7%
+  Contacts.Core.Zippo.UpstreamException              100%
+  Contacts.Core.Zippo.ZippoClient                   91.1%
+  Contacts.Core.Zippo.ZippoPlaceWire                 100%
+  Contacts.Core.Zippo.ZippoWire                      100%
+  System.Text.RegularExpressions.Generated          77.5%
