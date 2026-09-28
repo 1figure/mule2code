@@ -1,0 +1,10 @@
+# GitHub Pages (Jekyll) settings for the docs/ site.
+title: mule2code
+description: Two Mule 4 apps ported to plain Go and C# with Claude, with DataWeave ports, shared test fixtures and a parity check against the Mule runtime.
+url: https://1figure.github.io
+baseurl: /mule2code
+lang: en
+theme: jekyll-theme-minimal
+plugins:
+  - jekyll-seo-tag
+  - jekyll-sitemap

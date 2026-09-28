@@ -29,6 +29,7 @@ mule-to-code/
 │           │                             impl.xml MODIFIED after generation: ee:transform -> set-payload
 │           └── resources/properties/mule-props-{sqlite,postgres}.yaml
 ├── PARITY.md                 comparing the ports with the Mule runtime; what to do on disagreement
+├── docs/                     GitHub Pages landing page (index.md + _config.yml), published from main:/docs
 ├── .dockerignore             build context of docker/mule-ce (only mule/contacts-api)
 ├── testdata/                 shared fixtures + OpenAPI contract (see testdata/README.md)
 ├── docker/
