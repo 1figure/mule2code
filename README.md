@@ -9,9 +9,10 @@ deliberately. The question was how far an unguided model gets with this kind of 
 properly set-up conversion project can be. What such a setup would add is left to the reader (see
 *Scope*).
 
-This repository is the proof behind a short post: the flows you run on the Mule runtime are just code.
-Given the Mule XML, a model can turn them into an ordinary service in whatever language you use, and
-the runtime, the connectors and the licence that come with them can go.
+This repository is the proof behind a short post: converting Mule flows to ordinary code has become
+cheap. Given the XML, a model turns them into a plain service in whatever language you use, in an
+afternoon, verified against the Mule runtime where the licence allows it — and the runtime, the
+connectors and the licence that come with them can go.
 
 It is a temporary showcase. It may be taken down; the post is the durable reference.
 

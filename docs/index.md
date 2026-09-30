@@ -14,12 +14,12 @@ against the Mule runtime.
 
 ## The claim
 
-The flows you run on the Mule runtime are just code. Given the Mule XML, a
-model turns them into an ordinary service in whatever language you use, and
-the runtime, the connectors and the licence that come with them can go. What
-you get back is what every other codebase already has: a compiler, a linter,
-a reviewer, coverage, dependency bots and a CVE scanner — none of which ever
-saw the XML.
+Converting Mule flows to ordinary code has become cheap. Given the XML, a
+model turns them into a plain service in whatever language you use, in an
+afternoon, and the runtime, the connectors and the licence that come with
+them can go. What you get back is what every other codebase already has: a
+compiler, a linter, a reviewer, coverage, dependency bots and a CVE scanner —
+none of which ever saw the XML.
 
 ## What went in
 
@@ -127,8 +127,8 @@ Request latency was not benchmarked. Compute your own vCore.
 - Batch outputs are verified port against port, not against Mule; the places
   a live Enterprise run could differ are named in `MAPPING.md`.
 - Premium connectors, Object Store and clustering semantics, MUnit and the
-  visual canvas are not exercised. "Just code" also means writing the batch
-  engine yourself — and proving equivalence, which was most of the work.
+  visual canvas are not exercised. Cheap conversion still means writing the
+  batch engine yourself — and proving equivalence, which was most of the work.
 - Corrections during generation are not recorded; "if it doesn't compile,
   say so in the same session" is part of the mechanic, and the real-project
   setup around it (agent instructions, hooks, review rules) is deliberately
