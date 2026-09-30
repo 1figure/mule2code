@@ -4,7 +4,7 @@ description: Two Mule 4 apps ported to plain Go and C# with Claude, with DataWea
 url: https://1figure.github.io
 baseurl: /mule2code
 lang: en
-theme: jekyll-theme-minimal
+theme: jekyll-theme-cayman
 plugins:
   - jekyll-seo-tag
   - jekyll-sitemap

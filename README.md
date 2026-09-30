@@ -2,6 +2,13 @@
 
 **Two Mule 4 applications, ported to plain C# and Go services with a handful of Claude prompts.**
 
+**Method, stated up front.** The ports were produced by plain prompting — the literal prompts in
+`PROMPTS.md`, one per fresh session, nothing else: no `CLAUDE.md`, no hooks, no agents, no
+orchestration, no design pass, no review loop beyond "it doesn't compile, fix it". "Prompt and pray",
+deliberately. The question was how far an unguided model gets with this kind of port, not how good a
+properly set-up conversion project can be. What such a setup would add is left to the reader (see
+*Scope*).
+
 This repository is the proof behind a short post: the flows you run on the Mule runtime are just code.
 Given the Mule XML, a model can turn them into an ordinary service in whatever language you use, and
 the runtime, the connectors and the licence that come with them can go.
