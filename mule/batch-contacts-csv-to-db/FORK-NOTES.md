@@ -1,8 +1,14 @@
 # Fork notes (mule-to-code)
 
 This directory is a copy of `batch-contacts-csv-to-db` from
-https://github.com/abelisle-mulesoft/mule-4-batch-job-examples (Apache License 2.0, © Alan Belisle).
-The upstream license is kept as `LICENSE-upstream`.
+https://github.com/abelisle-mulesoft/mule-4-batch-job-examples (Apache License 2.0, © Alan Belisle),
+taken 2026-09-25T06:46Z. The upstream commit current at that time was `776c9c30b7`
+(2026-09-24T23:16Z); `src/main/mule/*.xml` and `properties/mule-props.template.yaml` are byte-identical
+to it (verified 2026-09-30). Upstream changed these files later the same day — `789b6ea919`
+(2026-09-25T20:56Z): `app-props-*.yaml`, aggregator size hard-coded; `8b3b0ee973` (2026-09-25T21:47Z):
+`sftp.archive_dir` — so a diff against upstream `main` shows upstream's changes, not this fork's.
+This copy is intentionally frozen at that commit: it is the conversion input, and the ports were
+generated from it. Do not sync it with upstream. The upstream license is kept as `LICENSE-upstream`.
 
 Changes made in this fork, all additive:
 
